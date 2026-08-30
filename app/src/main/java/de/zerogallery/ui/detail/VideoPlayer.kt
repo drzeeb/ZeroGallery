@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,9 +87,13 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * after the first page change (a well-known Android View/Compose interop pitfall). To avoid this,
  * the controller is disabled and play/pause is instead handled by a plain Compose `clickable`
  * overlay, which only reacts to taps and lets horizontal drags pass through to the pager untouched.
+ *
+ * [onTap] additionally fires on every such tap, letting the caller (e.g. [MediaDetailScreen]) toggle
+ * its own overlay chrome alongside the play/pause toggle - same tap-to-toggle-chrome convention
+ * used by [ZoomableAsyncImage] for photos.
  */
 @Composable
-fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier) {
+fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier, onTap: () -> Unit = {}) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -143,6 +148,7 @@ fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier) {
                     indication = null,
                 ) {
                     if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
+                    onTap()
                 },
             contentAlignment = Alignment.Center,
         ) {
@@ -159,7 +165,9 @@ fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier) {
             }
         }
 
-        Box(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+        // Top padding clears MediaDetailScreen's overlay app bar (status bar + ~56.dp title bar)
+        // so this button doesn't sit underneath it when the chrome is visible.
+        Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 56.dp, end = 8.dp, bottom = 8.dp)) {
             IconButton(
                 onClick = {
                     resizeModeIndex = (resizeModeIndex + 1) % VideoResizeMode.entries.size
