@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Detail viewer: swiping between photos didn't work at all. `ZoomableAsyncImage` used `detectTransformGestures`, which treats *any* single-finger movement as a "pan" and unconditionally consumes it - silently eating every horizontal drag before the enclosing `HorizontalPager` ever saw it. Replaced with a custom gesture detector that only consumes single-finger drags while the image is actually zoomed in (panning); at the default 1x fit, drags are left unconsumed so the pager can treat them as a normal swipe. Two-finger pinch-to-zoom still always works
 - Video thumbnail badge: the play icon used `Modifier.aspectRatio(1f)` with no bounded size, so inside its `Row` it inflated to fill the loose constraints passed down from the grid tile, making the badge's rounded background grow inconsistently and reveal an uneven strip of the thumbnail behind it. Replaced with a fixed `Modifier.size(12.dp)` so the badge always hugs its content tightly
 
 ### Added
