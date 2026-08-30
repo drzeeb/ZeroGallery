@@ -7,10 +7,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,11 +24,16 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,6 +48,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
+import de.zerogallery.ui.gallery.formatDuration
 import androidx.media3.common.MediaItem as Media3MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -98,6 +108,15 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * [isActive] pausing it when swiped off-screen within the pager. It intentionally does *not*
  * auto-resume when the app comes back to the foreground - the user has to explicitly tap play
  * again, same as e.g. YouTube, rather than audio/video suddenly starting back up on its own.
+ *
+ * A scrubber [Slider] at the bottom (also only shown while [isChromeVisible]) lets the user seek
+ * within the video. [ExoPlayer] has no "position changed" callback, so the current position is
+ * polled on a 200ms timer instead ([positionMs]) - cheap enough for a single foreground player and
+ * far simpler than reaching for `Player.Listener.onEvents` diffing. Polling is suspended while the
+ * user is actively dragging the thumb ([isSeeking]) so it can't fight the drag by snapping the
+ * thumb back to the *actual* (pre-seek) playback position on every tick; the real seek only
+ * happens once the drag ends (`onValueChangeFinished`), not on every intermediate value while
+ * dragging, to avoid flooding the player with seek requests.
  */
 @Composable
 fun VideoPlayer(
@@ -139,6 +158,22 @@ fun VideoPlayer(
 
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         exoPlayer.pause()
+    }
+
+    var durationMs by remember(exoPlayer) { mutableLongStateOf(0L) }
+    var positionMs by remember(exoPlayer) { mutableLongStateOf(0L) }
+    var isSeeking by remember(exoPlayer) { mutableStateOf(false) }
+    var seekPositionMs by remember(exoPlayer) { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(exoPlayer, isChromeVisible) {
+        while (isChromeVisible) {
+            if (!isSeeking) {
+                positionMs = exoPlayer.currentPosition.coerceAtLeast(0L)
+                val duration = exoPlayer.duration
+                if (duration > 0) durationMs = duration
+            }
+            delay(200)
+        }
     }
 
     var resizeModeIndex by remember(uri) { mutableIntStateOf(0) }
@@ -234,6 +269,49 @@ fun VideoPlayer(
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                         )
                     }
+                }
+
+                // Seek bar, bottom-aligned. displayPositionMs reflects the drag in progress (if
+                // any) rather than the polled playback position, so the thumb doesn't jump back
+                // to the pre-seek position while the user is still dragging it.
+                val displayPositionMs = if (isSeeking) seekPositionMs.toLong() else positionMs
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = formatDuration(displayPositionMs),
+                        color = Color.White,
+                        modifier = Modifier.width(48.dp),
+                    )
+                    Slider(
+                        value = displayPositionMs.toFloat(),
+                        onValueChange = {
+                            isSeeking = true
+                            seekPositionMs = it
+                        },
+                        onValueChangeFinished = {
+                            exoPlayer.seekTo(seekPositionMs.toLong())
+                            isSeeking = false
+                        },
+                        valueRange = 0f..durationMs.coerceAtLeast(1L).toFloat(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.3f),
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = formatDuration(durationMs),
+                        color = Color.White,
+                        modifier = Modifier.width(48.dp),
+                    )
                 }
             }
         }
