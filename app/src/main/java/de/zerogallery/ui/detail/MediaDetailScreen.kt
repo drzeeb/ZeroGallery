@@ -1,10 +1,12 @@
 package de.zerogallery.ui.detail
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -12,12 +14,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +35,13 @@ import de.zerogallery.domain.model.MediaType
  *
  * Photos support pinch-to-zoom/pan ([ZoomableAsyncImage]); videos play inline via Media3/
  * ExoPlayer ([VideoPlayer]), automatically pausing as soon as the user swipes to a different page.
+ *
+ * The back button/filename bar is an overlay drawn *on top of* the media rather than a
+ * [androidx.compose.material3.Scaffold] bar that reserves its own space - the pager behind it
+ * always fills the entire screen edge-to-edge (this activity is edge-to-edge, see
+ * [de.zerogallery.MainActivity]). A single tap on the media toggles [isChromeVisible], hiding or
+ * showing that overlay, matching the common gallery-app convention (Google Photos, etc.) of
+ * tap-to-toggle chrome so the photo/video itself can be viewed completely unobstructed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,10 +54,37 @@ fun MediaDetailScreen(
 
     val pagerState = rememberPagerState(initialPage = initialIndex) { items.size }
     val currentItem = items.getOrNull(pagerState.currentPage)
+    var isChromeVisible by remember { mutableStateOf(true) }
 
-    Scaffold(
-        containerColor = Color.Black,
-        topBar = {
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+        ) { page ->
+            val item = items[page]
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (item.mediaType) {
+                    MediaType.IMAGE -> ZoomableAsyncImage(
+                        model = item.uri,
+                        contentDescription = item.displayName,
+                        onTap = { isChromeVisible = !isChromeVisible },
+                    )
+
+                    MediaType.VIDEO -> VideoPlayer(
+                        uri = item.uri,
+                        isActive = pagerState.currentPage == page,
+                        onTap = { isChromeVisible = !isChromeVisible },
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
             TopAppBar(
                 title = {
                     Text(
@@ -64,32 +103,12 @@ fun MediaDetailScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Black.copy(alpha = 0.6f),
+                ),
             )
-        },
-    ) { paddingValues ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.Black),
-        ) { page ->
-            val item = items[page]
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (item.mediaType) {
-                    MediaType.IMAGE -> ZoomableAsyncImage(
-                        model = item.uri,
-                        contentDescription = item.displayName,
-                    )
-
-                    MediaType.VIDEO -> VideoPlayer(
-                        uri = item.uri,
-                        isActive = pagerState.currentPage == page,
-                    )
-                }
-            }
         }
     }
 }
+
 

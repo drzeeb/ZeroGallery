@@ -82,9 +82,21 @@ internal fun computeDoubleTapOffset(containerSize: IntSize, tapPosition: Offset,
  * Pinch/pan updates [scale]/[offset] instantly (`snapTo`), since the user's fingers are actively
  * driving them frame-by-frame; the double-tap zoom transition is animated (`animateTo`) with a
  * short, snappy [DoubleTapZoomAnimationMillis]-long tween instead.
+ *
+ * [onTap] fires on every plain tap-up (single or double), letting the caller toggle its own chrome
+ * (e.g. [MediaDetailScreen]'s overlay bar) - it's invoked regardless of whether the tap later turns
+ * out to be part of a double-tap, since a tap can only be classified as a "true" single tap once
+ * the double-tap timeout has passed without a follow-up, and waiting for that would make toggling
+ * the chrome feel laggy. In practice this means a double-tap toggles the chrome twice in quick
+ * succession (effectively a no-op blip), which matches how plenty of gallery apps already behave.
  */
 @Composable
-fun ZoomableAsyncImage(model: Any, contentDescription: String?, modifier: Modifier = Modifier) {
+fun ZoomableAsyncImage(
+    model: Any,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    onTap: () -> Unit = {},
+) {
     val scale = remember(model) { Animatable(1f) }
     val offset = remember(model) { Animatable(Offset.Zero, Offset.VectorConverter) }
     var containerSize by remember(model) { mutableStateOf(IntSize.Zero) }
@@ -143,6 +155,7 @@ fun ZoomableAsyncImage(model: Any, contentDescription: String?, modifier: Modifi
                     // (near-zero) panning purposes while zoomed in.
                     val wasTap = !sawMultiTouch && totalPanDistance < viewConfiguration.touchSlop
                     if (wasTap) {
+                        onTap()
                         val now = SystemClock.uptimeMillis()
                         val previousTapPosition = lastTapPosition
                         val isDoubleTap = previousTapPosition != null &&
