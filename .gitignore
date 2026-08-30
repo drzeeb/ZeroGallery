@@ -1,4 +1,4 @@
-*.iml
+b*.iml
 .gradle
 /local.properties
 /.idea/caches
@@ -17,8 +17,17 @@
 local.properties
 *.hprof
 *.keystore
+*.jks
 !debug.keystore
 .navigation/
 /gradle.properties.local
 output.json
 /.idea/copilotDiffState.xml
+
+# fastlane (see fastlane/Fastfile) - local run artifacts/credentials that must never be committed,
+# on top of the *.jks/*.keystore patterns above already covering the release keystore itself.
+fastlane/report.xml
+fastlane/*.log
+fastlane/README.md
+*play-store*.json
+

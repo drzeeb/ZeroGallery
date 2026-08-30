@@ -33,6 +33,11 @@
       "groupName": "GitHub Actions"
     },
     {
+      "description": "fastlane and its dependencies (Gemfile, see fastlane/Fastfile) - the Play Store upload tooling, versioned independently of anything in the Android app itself.",
+      "matchManagers": ["bundler"],
+      "groupName": "fastlane"
+    },
+    {
       "description": "Major version bumps need a human to actually read the changelog for breaking changes (e.g. a new AGP/Kotlin major version) - never auto-merged, unlike minor/patch housekeeping could be configured to be later.",
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true

@@ -1,0 +1,2 @@
+Initial release: a fast, ad-free, 100% offline gallery for your photos and videos.
+

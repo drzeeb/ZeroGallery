@@ -5,9 +5,14 @@ name: Release
 # ci.yml does. Builds/tags/releases app/build.gradle.kts's versionName/versionCode as given here,
 # signs the app bundle + APK if release signing secrets are configured (see build.gradle.kts's
 # releaseSigningConfigured comment for why those are never committed to the repo), and publishes
-# both as a GitHub Release - Play Store upload itself is a separate, manual step (drag-and-drop the
-# downloaded .aab into the Play Console) rather than being automated here, since that additionally
-# needs a Play Console service account with its own credentials to set up.
+# both as a GitHub Release.
+#
+# Deliberately does NOT also upload to the Play Store (or anywhere else) - see publish.yml for
+# that instead, kept as its own separate, independently re-runnable workflow. Bundling "cut a new
+# version" and "publish it everywhere" into one job would mean a single failing publish target
+# (e.g. a Play Console hiccup) fails the *entire* job - including steps after it, like tagging and
+# the GitHub Release itself - forcing you to bump the version a second time just to retry the one
+# thing that actually failed.
 on:
   workflow_dispatch:
     inputs:
@@ -99,4 +104,6 @@ jobs:
           files: |
             app/build/outputs/bundle/release/app-release.aab
             app/build/outputs/apk/release/app-release.apk
+
+
 

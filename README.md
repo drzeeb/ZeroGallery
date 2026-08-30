@@ -57,16 +57,22 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
 
 Contributions are welcome! Please open an issue before working on larger features to avoid duplicate work.
 
-## 🚀 Releasing
+## 🚀 Releasing & Publishing
 
-Cutting a release is a manual [`workflow_dispatch`](.github/workflows/release.yml) run (Actions tab
-→ "Release" → "Run workflow"), where you type in the version name (and optionally the version
-code, otherwise it's just incremented by 1). It bumps `versionName`/`versionCode` in
+Cutting a release and publishing it somewhere are two separate, independently re-runnable
+[`workflow_dispatch`](.github/workflows) jobs on purpose: if publishing to one target fails (say,
+a flaky Play Console API call), you can just re-run *that* without needing to bump the version
+number again or touch anything else that already succeeded.
+
+### 1. Release (`.github/workflows/release.yml`)
+
+Actions tab → "Release" → "Run workflow", type in the version name (and optionally the version
+code, otherwise it's just incremented by 1). Bumps `versionName`/`versionCode` in
 `app/build.gradle.kts`, builds the release `.aab`/`.apk`, tags the commit (`vX.Y.Z`) and publishes
-both artifacts as a GitHub Release.
+both artifacts as a GitHub Release. This is the only workflow that ever touches versioning.
 
-Building an actually *signed* bundle (required for a Play Store upload) additionally needs these
-repository secrets set once, under *Settings → Secrets and variables → Actions*:
+Building an actually *signed* bundle additionally needs these repository secrets set once, under
+*Settings → Secrets and variables → Actions*:
 
 | Secret | Value |
 | --- | --- |
@@ -81,6 +87,38 @@ produces an *unsigned* bundle/APK - useful for a dry run, but not installable/up
 
 The keystore and its passwords are intentionally never committed to this repository, not even
 encrypted - see the comment above `releaseSigningConfigured` in `app/build.gradle.kts` for why.
+
+### 2. Publish (`.github/workflows/publish.yml`)
+
+Actions tab → "Publish" → "Run workflow", pointing it at an already-tagged release (`ref: vX.Y.Z`)
+- it checks out that exact tag and rebuilds from it, so it's safe to run as many times as needed.
+Two independent, opt-in targets, each its own boolean input:
+
+- **`bundle`** (default on) - (re-)attaches the built `.aab`/`.apk` to that tag's GitHub Release,
+  creating it first if `release.yml` somehow hadn't already (e.g. it failed before that step).
+- **`fastlane`** (default off) - uploads the signed bundle, plus this repo's store listing text
+  (`fastlane/metadata/android/<locale>/title.txt`/`short_description.txt`/`full_description.txt`/
+  `changelogs/<versionCode>.txt`), to a Play Console track via [fastlane](https://fastlane.tools)'s
+  `supply` action (see `fastlane/Fastfile`). Pick the target track (`internal`, `alpha`, `beta` or
+  `production`) via the `play_store_track` input; `internal` is the right choice for a brand new
+  listing still going through Google's mandatory closed-testing period.
+
+Enabling `fastlane` needs a Play Console **service account** set up once:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create a service account
+   (any project) and generate a JSON key for it.
+2. In the Play Console, under *Setup → API access*, link that same Cloud project and grant the
+   service account at least the "Release manager" permission for this app.
+3. Base64-encode the downloaded JSON key (`base64 -w0 your-key.json`) and store it as the repo
+   secret `PLAY_STORE_JSON_KEY_BASE64`.
+
+Screenshots and the feature graphic aren't checked into this repo yet, so `supply` is configured
+to leave images alone entirely (`skip_upload_images`/`skip_upload_screenshots` in the Fastfile) -
+add them under `fastlane/metadata/android/<locale>/images/` once available and drop those two
+flags to have fastlane manage them too.
+
+You can also run any of this locally instead of through CI: `bundle exec fastlane android deploy
+track:internal` (with `GOOGLE_PLAY_JSON_KEY_PATH` pointing at your own downloaded key file).
 
 ## 📄 License
 

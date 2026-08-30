@@ -1,0 +1,18 @@
+ZeroGallery es una app de galería extremadamente ligera, sin publicidad y 100% sin conexión para tus fotos y vídeos.
+
+Sin rastreo. Sin acceso a internet. Sin nube. Solo tus archivos, bajo tu control.
+
+FUNCIONES
+• Escaneo rápido y nativo de fotos y vídeos a través del MediaStore de Android
+• Cuadrícula fluida y adaptable con miniaturas en caché, tanto en móviles como en tablets
+• Visor a pantalla completa con navegación por deslizamiento, zoom con pellizco o doble toque
+• Reproducción de vídeo fluida, con gestos ocultos para avanzar, brillo y volumen
+• Agrupa tu galería por fecha o por carpeta, con una barra de desplazamiento rápido para bibliotecas grandes
+• Opcionalmente, lee también carpetas ocultas (cuyo nombre empieza con un punto) mediante el selector de carpetas del propio sistema - sin necesidad de ningún permiso especial
+• Comparte o elimina fotos y vídeos directamente desde la cuadrícula o el visor a pantalla completa
+
+¿POR QUÉ NO TIENE PERMISO DE INTERNET?
+ZeroGallery deliberadamente no declara el permiso INTERNET. Esto no es un ajuste que se pueda activar más adelante, sino una garantía arquitectónica: sin este permiso, la app es técnicamente incapaz de enviar o recibir cualquier dato, sin importar lo que haga el código.
+
+ZeroGallery es totalmente de código abierto bajo la Apache License 2.0. Código fuente, seguimiento de incidencias y política de privacidad: https://github.com/drzeeb/ZeroGallery
+
