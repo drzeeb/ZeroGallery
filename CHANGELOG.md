@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Video thumbnail badge: the play icon used `Modifier.aspectRatio(1f)` with no bounded size, so inside its `Row` it inflated to fill the loose constraints passed down from the grid tile, making the badge's rounded background grow inconsistently and reveal an uneven strip of the thumbnail behind it. Replaced with a fixed `Modifier.size(12.dp)` so the badge always hugs its content tightly
+
 ### Added
 - GitHub Pages site (`docs/`): landing page (`index.html`) and a Play Store-ready privacy policy (`privacy.html`) explaining that ZeroGallery collects, stores and transmits no data whatsoever
 - Full-screen detail viewer (`MediaDetailScreen`): swipeable `HorizontalPager` opened by tapping a grid tile
