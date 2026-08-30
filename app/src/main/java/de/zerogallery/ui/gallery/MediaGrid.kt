@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -76,6 +78,9 @@ private fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
  * necessarily the original chronological order. The caller uses that index to open
  * [de.zerogallery.ui.detail.MediaDetailScreen] at that page against that same flattened list, so
  * swiping through the detail viewer always matches whatever order the grid is currently showing.
+ *
+ * A [FastScrollbar] thumb is overlaid on the right edge, letting a large grid be dragged through
+ * quickly instead of only flinging one screen at a time - see its class doc for details.
  */
 @Composable
 fun MediaGrid(
@@ -85,28 +90,39 @@ fun MediaGrid(
 ) {
     val minThumbnailSize = gridMinThumbnailSize(windowWidthSizeClass)
     val spacing = gridSpacing(windowWidthSizeClass)
+    val gridState = rememberLazyGridState()
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = minThumbnailSize),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(spacing),
-        verticalArrangement = Arrangement.spacedBy(spacing),
-        horizontalArrangement = Arrangement.spacedBy(spacing),
-    ) {
-        var flatIndex = 0
-        for (group in groups) {
-            if (group.label.isNotBlank()) {
-                item(key = "header-${group.label}", span = { GridItemSpan(maxLineSpan) }) {
-                    MediaGroupHeader(label = group.label)
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Adaptive(minSize = minThumbnailSize),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(spacing),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+        ) {
+            var flatIndex = 0
+            for (group in groups) {
+                if (group.label.isNotBlank()) {
+                    item(key = "header-${group.label}", span = { GridItemSpan(maxLineSpan) }) {
+                        MediaGroupHeader(label = group.label)
+                    }
                 }
+                val startIndex = flatIndex
+                itemsIndexed(items = group.items, key = { _, item -> item.id }) { indexInGroup, item ->
+                    val index = startIndex + indexInGroup
+                    MediaGridItem(item = item, onClick = { onItemClick(index) })
+                }
+                flatIndex += group.items.size
             }
-            val startIndex = flatIndex
-            itemsIndexed(items = group.items, key = { _, item -> item.id }) { indexInGroup, item ->
-                val index = startIndex + indexInGroup
-                MediaGridItem(item = item, onClick = { onItemClick(index) })
-            }
-            flatIndex += group.items.size
         }
+
+        FastScrollbar(
+            gridState = gridState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight(),
+        )
     }
 }
 
@@ -130,17 +146,28 @@ fun FolderGrid(
 ) {
     val minThumbnailSize = gridMinThumbnailSize(windowWidthSizeClass)
     val spacing = gridSpacing(windowWidthSizeClass)
+    val gridState = rememberLazyGridState()
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = minThumbnailSize),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(spacing),
-        verticalArrangement = Arrangement.spacedBy(spacing),
-        horizontalArrangement = Arrangement.spacedBy(spacing),
-    ) {
-        items(items = folders, key = { it.label }) { folder ->
-            FolderGridItem(folder = folder, onClick = { onFolderClick(folder) })
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Adaptive(minSize = minThumbnailSize),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(spacing),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+        ) {
+            items(items = folders, key = { it.label }) { folder ->
+                FolderGridItem(folder = folder, onClick = { onFolderClick(folder) })
+            }
         }
+
+        FastScrollbar(
+            gridState = gridState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight(),
+        )
     }
 }
 
