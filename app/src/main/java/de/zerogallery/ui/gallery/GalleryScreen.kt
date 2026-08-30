@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.zerogallery.R
 import de.zerogallery.ui.permission.MediaPermissions
+import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
 /**
  * Stateful entry point: wires up the runtime permission request to [GalleryViewModel] and
@@ -48,8 +50,12 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
 /**
  * Stateless gallery screen.
  *
- * Renders [MediaGrid], an adaptive thumbnail grid (see [MediaGrid.kt]). Phase 3 will refine the
- * breakpoints using `WindowSizeClass`; Phase 4 adds the full-screen detail viewer opened from here.
+ * Renders [MediaGrid], an adaptive thumbnail grid (see [MediaGrid.kt]) that already grows its
+ * column count with the available width. On top of that, [windowWidthSizeClass] (Compact/Medium/
+ * Expanded, see [de.zerogallery.ui.util.WindowWidthSizeClass]) drives finer layout decisions:
+ * larger thumbnails and roomier padding on tablets, and a readable, non-edge-to-edge max width
+ * for the permission/empty messages. Phase 4 will reuse this size class for a master-detail
+ * layout (grid + detail pane side by side) on [de.zerogallery.ui.util.WindowWidthSizeClass.EXPANDED].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +63,8 @@ private fun GalleryScreen(
     uiState: GalleryUiState,
     onRequestPermission: () -> Unit,
 ) {
+    val windowWidthSizeClass = rememberWindowWidthSizeClass()
+
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
     ) { paddingValues ->
@@ -70,7 +78,10 @@ private fun GalleryScreen(
                 is GalleryUiState.Loading -> CircularProgressIndicator()
                 is GalleryUiState.PermissionRequired -> PermissionRationale(onRequestPermission)
                 is GalleryUiState.Empty -> EmptyGalleryMessage()
-                is GalleryUiState.Content -> MediaGrid(items = uiState.items)
+                is GalleryUiState.Content -> MediaGrid(
+                    items = uiState.items,
+                    windowWidthSizeClass = windowWidthSizeClass,
+                )
             }
         }
     }
@@ -81,7 +92,9 @@ private fun PermissionRationale(onRequestPermission: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(24.dp),
+        modifier = Modifier
+            .widthIn(max = 480.dp)
+            .padding(24.dp),
     ) {
         Icon(imageVector = Icons.Filled.PhotoLibrary, contentDescription = null)
         Text(
@@ -103,7 +116,9 @@ private fun EmptyGalleryMessage() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(24.dp),
+        modifier = Modifier
+            .widthIn(max = 480.dp)
+            .padding(24.dp),
     ) {
         Text(
             text = stringResource(R.string.empty_gallery_title),

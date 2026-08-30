@@ -44,7 +44,7 @@ cd ZeroGallery
 - [x] Project setup, license, CI
 - [x] MediaStore data layer & permission handling
 - [x] Basic grid (phone)
-- [ ] Adaptive layout (tablet support)
+- [x] Adaptive layout (tablet support)
 - [ ] Detail viewer & video player
 
 See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.

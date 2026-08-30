@@ -27,27 +27,41 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
-
-/** Minimum width a grid cell may shrink to before an extra column is added. */
-private val MinThumbnailSize = 120.dp
+import de.zerogallery.ui.util.WindowWidthSizeClass
+import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
 /**
  * Adaptive, Pinterest/Photos-style thumbnail grid.
  *
  * Uses [GridCells.Adaptive] rather than a hard-coded column count: the number of columns grows
  * automatically with the available width, so the exact same composable yields ~3 columns on a
- * narrow phone and significantly more on a tablet or in landscape - without any manual
- * `WindowSizeClass` breakpoints (those are introduced in Phase 3 for coarser layout decisions,
- * e.g. switching to a navigation rail).
+ * narrow phone and significantly more on a tablet or in landscape. On top of that,
+ * [windowWidthSizeClass] scales the minimum thumbnail size and the grid's spacing/padding up on
+ * larger screens, so tablets get comfortably sized tiles and margins instead of many tiny,
+ * edge-to-edge tiles.
  */
 @Composable
-fun MediaGrid(items: List<MediaItem>) {
+fun MediaGrid(
+    items: List<MediaItem>,
+    windowWidthSizeClass: WindowWidthSizeClass = rememberWindowWidthSizeClass(),
+) {
+    val minThumbnailSize = when (windowWidthSizeClass) {
+        WindowWidthSizeClass.COMPACT -> 120.dp
+        WindowWidthSizeClass.MEDIUM -> 140.dp
+        WindowWidthSizeClass.EXPANDED -> 160.dp
+    }
+    val spacing = when (windowWidthSizeClass) {
+        WindowWidthSizeClass.COMPACT -> 2.dp
+        WindowWidthSizeClass.MEDIUM -> 4.dp
+        WindowWidthSizeClass.EXPANDED -> 8.dp
+    }
+
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = MinThumbnailSize),
+        columns = GridCells.Adaptive(minSize = minThumbnailSize),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(2.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        contentPadding = PaddingValues(spacing),
+        verticalArrangement = Arrangement.spacedBy(spacing),
+        horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
         items(items = items, key = { it.id }) { item ->
             MediaGridItem(item)
