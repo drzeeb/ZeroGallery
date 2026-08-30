@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- New app icon: a clean, flat photo-stack mark (two overlapping cards with a mountain/sun glyph punched through the front one) on a deep indigo backdrop, replacing the default Android Studio template icon (green debug grid + generic robot artwork). Fully vector-based (`ic_launcher_background`/`ic_launcher_foreground`), including a themed/monochrome variant for Android 13+
 - Gallery grouping: a new button in the top bar cycles the thumbnail grid between no grouping (flat, purely reverse-chronological, the previous behaviour), by date (one section per month, e.g. "August 2026", with a full-width header above each section) and by folder - the latter first shows a folder *picker* (one tile per device folder/album, with a cover photo, name and item count, most recently active folder first), and only opens a folder's individual items once tapped, rather than dumping every item from every folder into one giant scrolling grid (`groupMedia`, unit-tested)
 - Seek bar for video playback, shown at the bottom of the screen alongside the rest of the overlay chrome (play/pause, aspect-ratio button) - drag it to scrub to any position, with elapsed/total time labels either side
 - Detail viewer's title bar is now a tap-to-toggle overlay drawn on top of the media instead of a bar that reserves its own space above it - photos/videos always fill the entire screen edge-to-edge, and a single tap hides/shows the bar, like most other gallery apps
