@@ -4,10 +4,15 @@ name: Release
 # use, when to cut it), never something that should happen automatically off a push/schedule like
 # ci.yml does. Builds/tags/releases app/build.gradle.kts's versionName/versionCode as given here,
 # signs the app bundle + APK if release signing secrets are configured (see build.gradle.kts's
-# releaseSigningConfigured comment for why those are never committed to the repo), publishes both
-# as a GitHub Release, and - if a Play Console service account key is configured (see fastlane/
-# Fastfile and README's "Releasing" section) - uploads the bundle plus fastlane/metadata/android's
-# store listing text to a Play Console track via fastlane.
+# releaseSigningConfigured comment for why those are never committed to the repo), and publishes
+# both as a GitHub Release.
+#
+# Deliberately does NOT also upload to the Play Store (or anywhere else) - see publish.yml for
+# that instead, kept as its own separate, independently re-runnable workflow. Bundling "cut a new
+# version" and "publish it everywhere" into one job would mean a single failing publish target
+# (e.g. a Play Console hiccup) fails the *entire* job - including steps after it, like tagging and
+# the GitHub Release itself - forcing you to bump the version a second time just to retry the one
+# thing that actually failed.
 on:
   workflow_dispatch:
     inputs:
@@ -19,16 +24,6 @@ on:
         description: "Version code (internal, ever-increasing build number). Leave empty to auto-increment the current one by 1."
         required: false
         type: string
-      play_store_track:
-        description: "Play Console track to upload to via fastlane, if Play Store upload is configured (see README). Ignored otherwise."
-        required: false
-        type: choice
-        default: internal
-        options:
-          - internal
-          - alpha
-          - beta
-          - production
 
 permissions:
   contents: write
@@ -87,27 +82,6 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/release.keystore"
 
-      - name: Set up Ruby (for fastlane)
-        if: ${{ vars.PLAY_STORE_UPLOAD_ENABLED == 'true' }}
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-
-      - name: Decode Play Console service account key
-        if: ${{ vars.PLAY_STORE_UPLOAD_ENABLED == 'true' }}
-        run: |
-          echo "${{ secrets.PLAY_STORE_JSON_KEY_BASE64 }}" | base64 -d > "$RUNNER_TEMP/play-store-key.json"
-          echo "GOOGLE_PLAY_JSON_KEY_PATH=$RUNNER_TEMP/play-store-key.json" >> "$GITHUB_ENV"
-
-      - name: Upload to Play Store
-        if: ${{ vars.PLAY_STORE_UPLOAD_ENABLED == 'true' }}
-        run: bundle exec fastlane android deploy track:${{ inputs.play_store_track }}
-
-      - name: Remove decoded Play Console key
-        if: always()
-        run: rm -f "$RUNNER_TEMP/play-store-key.json"
-
       - name: Commit version bump
         run: |
           git config user.name "github-actions[bot]"
@@ -130,4 +104,6 @@ jobs:
           files: |
             app/build/outputs/bundle/release/app-release.aab
             app/build/outputs/apk/release/app-release.apk
+
+
 
