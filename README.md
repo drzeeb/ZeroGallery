@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/drzeeb/ZeroGallery/actions/workflows/ci.yml/badge.svg)](https://github.com/drzeeb/ZeroGallery/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
+[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg)](https://android-arsenal.com/api?level=26)
 
 **ZeroGallery** is an extremely lightweight, ad-free and **100% offline** gallery app for photos and videos on Android.
 
@@ -29,7 +29,7 @@ ZeroGallery **deliberately does not** declare `android.permission.INTERNET`. Thi
 - Clean Architecture (Data / Domain / UI)
 - [Coil](https://coil-kt.github.io/coil/) for thumbnail loading & caching
 - [Media3/ExoPlayer](https://developer.android.com/media/media3) for video playback
-- Min SDK 24, latest target SDK
+- Min SDK 26, latest target SDK
 
 ## 📦 Installation
 
@@ -47,7 +47,7 @@ cd ZeroGallery
 - [x] MediaStore data layer & permission handling
 - [x] Basic grid (phone)
 - [x] Adaptive layout (tablet support)
-- [ ] Detail viewer & video player
+- [x] Detail viewer & video player
 
 See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
 
