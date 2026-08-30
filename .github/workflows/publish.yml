@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Existing release tag (or branch/commit) to publish, e.g. v1.2.0 - must already exist, see release.yml"
+        description: "Existing release tag (or branch/commit) to publish, e.g. v1.2.0 - must already exist, see release.yml. The 'v' prefix is added automatically if you forget it."
         required: true
         type: string
       bundle:
@@ -48,10 +48,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout ${{ inputs.ref }}
+      - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve ref
+        id: resolve_ref
+        run: |
+          INPUT="${{ inputs.ref }}"
+          if git rev-parse --verify --quiet "refs/tags/$INPUT" > /dev/null || git rev-parse --verify --quiet "origin/$INPUT" > /dev/null || git rev-parse --verify --quiet "$INPUT^{commit}" > /dev/null 2>&1; then
+            RESOLVED="$INPUT"
+          elif git rev-parse --verify --quiet "refs/tags/v$INPUT" > /dev/null; then
+            # Release tags are always created as "vX.Y.Z" (see release.yml) - forgetting the "v"
+            # prefix (e.g. typing just "1.0.0") is an easy, common mistake, so it's resolved here
+            # instead of failing the checkout outright.
+            RESOLVED="v$INPUT"
+          else
+            echo "::error::No tag/branch/commit '$INPUT' (or 'v$INPUT') found. Existing tags:"
+            git tag -l | sed 's/^/::error::  /'
+            exit 1
+          fi
+          echo "Resolved '$INPUT' -> '$RESOLVED'"
+          echo "ref=$RESOLVED" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout ${{ steps.resolve_ref.outputs.ref }}
+        run: git checkout "${{ steps.resolve_ref.outputs.ref }}"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -85,7 +107,7 @@ jobs:
         if: ${{ inputs.bundle }}
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.ref }}
+          tag_name: ${{ steps.resolve_ref.outputs.ref }}
           files: |
             app/build/outputs/bundle/release/app-release.aab
             app/build/outputs/apk/release/app-release.apk
