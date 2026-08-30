@@ -45,9 +45,15 @@ private val HideDelay = 1_000.milliseconds
  * thousands of items one screen at a time.
  *
  * Only shown while the grid itself is actively being scrolled or while the thumb is being
- * dragged, fading out [HideDelay] after either stops so it doesn't clutter the grid at
- * rest, same as Photos/most other fast-scrollers. Hidden entirely whenever [gridState] has too few
- * items to actually need one.
+ * dragged, fading out [HideDelay] after either stops so it doesn't clutter the grid at rest, same
+ * as Photos/most other fast-scrollers. Hidden entirely whenever [gridState] has too few items to
+ * actually need one.
+ *
+ * The right-edge touch target itself, however, always stays "live" (just invisible while faded
+ * out - [Modifier.alpha] only affects drawing, not touch handling) rather than only mounting once
+ * [gridState] happens to already be mid-scroll: otherwise there'd be no way to ever *start* a drag
+ * from rest, since the thumb visually appearing was itself gated on a scroll already being in
+ * progress - a chicken-and-egg that made the thumb effectively ungrabbable.
  *
  * Position/dragging is necessarily approximate: [LazyGridState] never lays out (or even knows the
  * size of) items far outside the current viewport, so there's no real "total content height" to
@@ -83,7 +89,7 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
     }
     val alpha by animateFloatAsState(targetValue = if (visible) 1f else 0f, label = "fastScrollbarAlpha")
 
-    if (!isScrollable || alpha <= 0f) return
+    if (!isScrollable) return
 
     val travel = (trackHeightPx - thumbHeightPx).coerceAtLeast(0f)
     val thumbTopPx = if (isDragging) dragThumbTopPx else restingProgress * travel
@@ -92,7 +98,6 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
         modifier = modifier
             .width(ThumbTouchWidth)
             .onSizeChanged { trackHeightPx = it.height.toFloat() }
-            .alpha(alpha)
             .pointerInput(gridState) {
                 detectVerticalDragGestures(
                     onDragStart = { offset ->
@@ -119,6 +124,7 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
                 .offset { IntOffset(0, thumbTopPx.roundToInt()) }
                 .width(ThumbWidth)
                 .height(ThumbHeight)
+                .alpha(alpha)
                 .clip(RoundedCornerShape(percent = 50))
                 .background(MaterialTheme.colorScheme.primary),
         )
@@ -150,6 +156,7 @@ internal suspend fun LazyGridState.scrollToFraction(fraction: Float) {
         .coerceIn(0, totalItems - 1)
     scrollToItem(targetIndex)
 }
+
 
 
 
