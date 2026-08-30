@@ -21,9 +21,16 @@
     <string name="hidden_folders_permission_body">As pastas ocultas (o nome delas começa com um ponto, por exemplo, usadas por uma app de cofre ou de mensagens) nunca são analisadas pelo índice de multimédia do Android. Escolhe essa pasta no ecrã seguinte para que a ZeroGallery possa ler o seu conteúdo diretamente - não é necessária qualquer permissão especial.</string>
     <string name="hidden_folders_permission_confirm">Escolher pasta</string>
     <string name="hidden_folders_permission_dismiss">Cancelar</string>
+    <string name="hidden_folders_manage_title">Pastas ocultas</string>
+    <string name="hidden_folders_manage_empty">Ainda não foi escolhida nenhuma pasta oculta.</string>
+    <string name="hidden_folders_manage_add_action">Adicionar pasta…</string>
+    <string name="hidden_folders_manage_remove_action">Remover %1$s</string>
+    <string name="hidden_folders_manage_dismiss">Concluído</string>
 
     <string name="overflow_menu_action">Mais opções</string>
     <string name="menu_item_video_gestures">Gestos de vídeo</string>
+    <string name="menu_item_choose_hidden_folder">Escolher pasta oculta…</string>
+    <string name="menu_item_manage_hidden_folders">Gerir pastas ocultas…</string>
     <string name="video_gestures_help_title">Gestos de vídeo</string>
     <string name="video_gestures_help_intro">Ao reproduzir um vídeo com os controlos ocultos (toca uma vez para os ocultar):</string>
     <string name="video_gestures_help_seek">Desliza para a esquerda/direita em qualquer ponto para avançar ou recuar no vídeo</string>

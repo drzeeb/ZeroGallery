@@ -21,9 +21,16 @@
     <string name="hidden_folders_permission_body">Versteckte Ordner (ihr Name beginnt mit einem Punkt, z. B. von einer Tresor- oder Messaging-App) werden vom Medienindex von Android nie gescannt. Wähle diesen Ordner im nächsten Bildschirm aus, damit ZeroGallery seinen Inhalt direkt lesen kann – keine besondere Berechtigung nötig.</string>
     <string name="hidden_folders_permission_confirm">Ordner auswählen</string>
     <string name="hidden_folders_permission_dismiss">Abbrechen</string>
+    <string name="hidden_folders_manage_title">Versteckte Ordner</string>
+    <string name="hidden_folders_manage_empty">Noch kein versteckter Ordner ausgewählt.</string>
+    <string name="hidden_folders_manage_add_action">Ordner hinzufügen…</string>
+    <string name="hidden_folders_manage_remove_action">%1$s entfernen</string>
+    <string name="hidden_folders_manage_dismiss">Fertig</string>
 
     <string name="overflow_menu_action">Weitere Optionen</string>
     <string name="menu_item_video_gestures">Videogesten</string>
+    <string name="menu_item_choose_hidden_folder">Versteckten Ordner auswählen…</string>
+    <string name="menu_item_manage_hidden_folders">Versteckte Ordner verwalten…</string>
     <string name="video_gestures_help_title">Videogesten</string>
     <string name="video_gestures_help_intro">Während der Wiedergabe eines Videos mit ausgeblendeten Steuerelementen (einmal tippen zum Ausblenden):</string>
     <string name="video_gestures_help_seek">Überall nach links/rechts wischen, um im Video vor- oder zurückzuspulen</string>

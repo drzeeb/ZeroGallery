@@ -7,10 +7,13 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 
 private const val PREFS_NAME = "hidden_folder_access"
-private const val KEY_TREE_URI = "tree_uri"
+private const val KEY_TREE_URIS = "tree_uris"
+// Read (and immediately migrated away from) for anyone upgrading from before multiple hidden
+// folders were supported, when this held a single plain string uri instead of KEY_TREE_URIS's set.
+private const val KEY_TREE_URI_LEGACY = "tree_uri"
 
 /**
- * Manages the user-picked "hidden folder" tree uri backing the folder view's "show hidden
+ * Manages the user-picked "hidden folder" tree uris backing the folder view's "show hidden
  * folders" toggle (see [HiddenMediaScanner]).
  *
  * `MediaStore`'s media scanner never indexes dot-prefixed directories at all (the convention
@@ -22,45 +25,67 @@ private const val KEY_TREE_URI = "tree_uri"
  * functionality doesn't otherwise need it.
  *
  * The Storage Access Framework's [Intent.ACTION_OPEN_DOCUMENT_TREE] instead lets the user pick
- * *just* the one hidden folder they want surfaced, via the system's own folder picker - Android
- * then grants this app a *persistable* permission scoped to only that folder (and its contents),
- * with no special manifest permission declared at all. [persist] takes and stores that grant (as a
- * plain string uri in `SharedPreferences`, similar to [de.zerogallery.ui.gallery.GallerySettings])
- * so it survives app restarts exactly like a normal runtime permission would; [treeUri] hands it
- * back to [HiddenMediaScanner] to actually read from.
+ * *just* the folder(s) they want surfaced, one at a time via the system's own folder picker -
+ * Android then grants this app a *persistable* permission scoped to only that folder (and its
+ * contents), with no special manifest permission declared at all. [add] takes and stores each
+ * grant (as a set of plain string uris in `SharedPreferences`, similar to
+ * [de.zerogallery.ui.gallery.GallerySettings]) so they survive app restarts exactly like a normal
+ * runtime permission would; [treeUris] hands them all back to [HiddenMediaScanner] to actually
+ * read from.
  */
 object HiddenFolderAccess {
 
-    fun isConfigured(context: Context): Boolean = treeUri(context) != null
+    fun isConfigured(context: Context): Boolean = treeUris(context).isNotEmpty()
 
-    fun treeUri(context: Context): Uri? =
-        prefs(context).getString(KEY_TREE_URI, null)?.toUri()
+    fun treeUris(context: Context): Set<Uri> {
+        migrateLegacyIfNeeded(context)
+        return prefs(context).getStringSet(KEY_TREE_URIS, null).orEmpty().map { it.toUri() }.toSet()
+    }
 
     /**
      * Persists [treeUri] (as returned by the `OpenDocumentTree` picker) so it keeps working across
-     * app restarts, replacing any previously picked folder - [Context.getContentResolver]'s
+     * app restarts, in addition to any previously picked folder(s) - [Context.getContentResolver]'s
      * `takePersistableUriPermission` is what actually makes the grant durable; without it, it would
      * only last until the app process is killed, same as a regular, non-persistable uri grant.
      */
-    fun persist(context: Context, treeUri: Uri) {
+    fun add(context: Context, treeUri: Uri) {
         context.contentResolver.takePersistableUriPermission(
             treeUri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
-        prefs(context).edit { putString(KEY_TREE_URI, treeUri.toString()) }
+        val updated = treeUris(context).map { it.toString() }.toMutableSet().apply { add(treeUri.toString()) }
+        prefs(context).edit { putStringSet(KEY_TREE_URIS, updated) }
     }
 
     /**
-     * Clears the persisted folder pick, e.g. after [HiddenMediaScanner] discovers its permission
-     * grant no longer actually works (revoked by the user in system settings, or the folder itself
-     * deleted) - the next refresh then behaves as if no folder was ever picked (see
-     * [HiddenMediaScanner.scan]) instead of silently failing forever. Auto Backup/device transfer
-     * never restore the actual grant this uri string refers to (see `backup_rules.xml`/
-     * `data_extraction_rules.xml`, which explicitly exclude these prefs for the same reason), so a
-     * fresh install/new device is never in this broken state to begin with.
+     * Drops one previously picked folder, e.g. the user explicitly removing it again in the
+     * "Manage hidden folders" dialog, or [HiddenMediaScanner] discovering its permission grant no
+     * longer actually works (revoked by the user in system settings, or the folder itself deleted)
+     * - either way, the next refresh then behaves as if that folder specifically was never picked
+     * (see [HiddenMediaScanner.scan]) instead of silently failing forever, while any *other* picked
+     * folders keep working as before. Auto Backup/device transfer never restore the actual grants
+     * these uri strings refer to (see `backup_rules.xml`/`data_extraction_rules.xml`, which
+     * explicitly exclude these prefs for the same reason), so a fresh install/new device is never
+     * in this broken state to begin with.
      */
-    fun clear(context: Context) {
-        prefs(context).edit { remove(KEY_TREE_URI) }
+    fun remove(context: Context, treeUri: Uri) {
+        val updated = treeUris(context).map { it.toString() }.toMutableSet()
+        if (!updated.remove(treeUri.toString())) return
+        prefs(context).edit { putStringSet(KEY_TREE_URIS, updated) }
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                treeUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+    }
+
+    private fun migrateLegacyIfNeeded(context: Context) {
+        val legacy = prefs(context).getString(KEY_TREE_URI_LEGACY, null) ?: return
+        prefs(context).edit {
+            putStringSet(KEY_TREE_URIS, setOf(legacy))
+            remove(KEY_TREE_URI_LEGACY)
+        }
     }
 
     private fun prefs(context: Context) =

@@ -21,9 +21,16 @@
     <string name="hidden_folders_permission_body">Les dossiers masqués (leur nom commence par un point, par ex. utilisés par une application de coffre-fort ou de messagerie) ne sont jamais analysés par l\'index multimédia d\'Android. Choisissez ce dossier dans l\'écran suivant pour que ZeroGallery puisse lire son contenu directement - aucune autorisation spéciale n\'est nécessaire.</string>
     <string name="hidden_folders_permission_confirm">Choisir un dossier</string>
     <string name="hidden_folders_permission_dismiss">Annuler</string>
+    <string name="hidden_folders_manage_title">Dossiers masqués</string>
+    <string name="hidden_folders_manage_empty">Aucun dossier masqué choisi pour l\'instant.</string>
+    <string name="hidden_folders_manage_add_action">Ajouter un dossier…</string>
+    <string name="hidden_folders_manage_remove_action">Retirer %1$s</string>
+    <string name="hidden_folders_manage_dismiss">Terminé</string>
 
     <string name="overflow_menu_action">Plus d\'options</string>
     <string name="menu_item_video_gestures">Gestes vidéo</string>
+    <string name="menu_item_choose_hidden_folder">Choisir un dossier masqué…</string>
+    <string name="menu_item_manage_hidden_folders">Gérer les dossiers masqués…</string>
     <string name="video_gestures_help_title">Gestes vidéo</string>
     <string name="video_gestures_help_intro">Pendant la lecture d\'une vidéo avec les commandes masquées (appuyez une fois pour les masquer) :</string>
     <string name="video_gestures_help_seek">Balayez vers la gauche/droite n\'importe où pour naviguer dans la vidéo</string>

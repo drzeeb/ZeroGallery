@@ -21,9 +21,16 @@
     <string name="hidden_folders_permission_body">Verborgen mappen (hun naam begint met een punt, bijv. van een kluis- of berichten-app) worden nooit gescand door de media-index van Android. Kies die map op het volgende scherm zodat ZeroGallery de inhoud rechtstreeks kan lezen - geen speciale machtiging nodig.</string>
     <string name="hidden_folders_permission_confirm">Map kiezen</string>
     <string name="hidden_folders_permission_dismiss">Annuleren</string>
+    <string name="hidden_folders_manage_title">Verborgen mappen</string>
+    <string name="hidden_folders_manage_empty">Nog geen verborgen map gekozen.</string>
+    <string name="hidden_folders_manage_add_action">Map toevoegen…</string>
+    <string name="hidden_folders_manage_remove_action">%1$s verwijderen</string>
+    <string name="hidden_folders_manage_dismiss">Klaar</string>
 
     <string name="overflow_menu_action">Meer opties</string>
     <string name="menu_item_video_gestures">Videogebaren</string>
+    <string name="menu_item_choose_hidden_folder">Verborgen map kiezen…</string>
+    <string name="menu_item_manage_hidden_folders">Verborgen mappen beheren…</string>
     <string name="video_gestures_help_title">Videogebaren</string>
     <string name="video_gestures_help_intro">Tijdens het afspelen van een video met verborgen bedieningselementen (tik één keer om ze te verbergen):</string>
     <string name="video_gestures_help_seek">Veeg overal naar links/rechts om door de video te spoelen</string>

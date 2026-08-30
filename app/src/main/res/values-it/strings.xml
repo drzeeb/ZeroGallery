@@ -21,9 +21,16 @@
     <string name="hidden_folders_permission_body">Le cartelle nascoste (il cui nome inizia con un punto, ad es. usate da un\'app di cassaforte o messaggistica) non vengono mai analizzate dall\'indice multimediale di Android. Scegli quella cartella nella schermata successiva così che ZeroGallery possa leggerne direttamente il contenuto - non serve alcun permesso speciale.</string>
     <string name="hidden_folders_permission_confirm">Scegli cartella</string>
     <string name="hidden_folders_permission_dismiss">Annulla</string>
+    <string name="hidden_folders_manage_title">Cartelle nascoste</string>
+    <string name="hidden_folders_manage_empty">Nessuna cartella nascosta ancora scelta.</string>
+    <string name="hidden_folders_manage_add_action">Aggiungi cartella…</string>
+    <string name="hidden_folders_manage_remove_action">Rimuovi %1$s</string>
+    <string name="hidden_folders_manage_dismiss">Fatto</string>
 
     <string name="overflow_menu_action">Altre opzioni</string>
     <string name="menu_item_video_gestures">Gesti video</string>
+    <string name="menu_item_choose_hidden_folder">Scegli cartella nascosta…</string>
+    <string name="menu_item_manage_hidden_folders">Gestisci cartelle nascoste…</string>
     <string name="video_gestures_help_title">Gesti video</string>
     <string name="video_gestures_help_intro">Durante la riproduzione di un video con i controlli nascosti (tocca una volta per nasconderli):</string>
     <string name="video_gestures_help_seek">Scorri verso sinistra/destra ovunque per scorrere il video</string>

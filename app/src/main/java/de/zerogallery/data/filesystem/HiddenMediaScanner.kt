@@ -1,6 +1,7 @@
 package de.zerogallery.data.filesystem
 
 import android.content.Context
+import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaSource
@@ -14,27 +15,29 @@ import de.zerogallery.domain.model.MediaType
  * surface this content; it was simply never scanned into that database in the first place.
  *
  * Reads via the Storage Access Framework instead of raw filesystem access: [HiddenFolderAccess]
- * holds a persisted, user-granted permission scoped to exactly the one folder they picked via the
- * system's folder picker (`ACTION_OPEN_DOCUMENT_TREE`), and [DocumentFile] walks it recursively
- * from there. This deliberately does *not* use the broad "All files access" special permission
- * (`MANAGE_EXTERNAL_STORAGE`) - that grants access to the *entire* device's storage for the sake
- * of this one narrow feature, which is exactly the kind of permission Google Play's review
- * process explicitly polices for apps like a gallery whose core functionality doesn't otherwise
- * need it. [scan] simply returns an empty list until the user has picked a folder (see
- * [HiddenFolderAccess.isConfigured]), rather than throwing, so callers can unconditionally merge
- * its result into their regular `MediaStore`-backed list.
+ * holds a persisted, user-granted permission scoped to exactly the folder(s) they picked via the
+ * system's folder picker (`ACTION_OPEN_DOCUMENT_TREE`, one at a time), and [DocumentFile] walks
+ * each of them recursively from there. This deliberately does *not* use the broad "All files
+ * access" special permission (`MANAGE_EXTERNAL_STORAGE`) - that grants access to the *entire*
+ * device's storage for the sake of this one narrow feature, which is exactly the kind of
+ * permission Google Play's review process explicitly polices for apps like a gallery whose core
+ * functionality doesn't otherwise need it. [scan] simply returns an empty list until the user has
+ * picked at least one folder (see [HiddenFolderAccess.isConfigured]), rather than throwing, so
+ * callers can unconditionally merge its result into their regular `MediaStore`-backed list.
  *
- * Unlike the old whole-device-storage walk, only the single folder the user explicitly picked
- * (and its subfolders) is ever read - if they use more than one hidden-folder app, each one needs
- * to be picked individually. [DocumentFile] traversal is also considerably slower than raw
+ * Unlike the old whole-device-storage walk, only the folder(s) the user explicitly picked (and
+ * their subfolders) are ever read - if they use more than one hidden-folder app (or the same one
+ * across several folders), each folder needs to be picked individually, though as many as they
+ * like can be picked this way. [DocumentFile] traversal is also considerably slower than raw
  * [java.io.File] access (each listing is its own cross-process content query), which is an
  * accepted trade-off for not needing a device-wide permission for it.
  *
- * The persisted grant [HiddenFolderAccess] hands back can still stop actually working later - the
- * user can revoke it from system settings, or the folder itself can get deleted - in which case
- * every [DocumentFile] call below throws [SecurityException]. [scan] treats that exactly like
- * never having picked a folder at all (see [HiddenFolderAccess.clear]) rather than crashing every
- * refresh of the whole gallery from then on.
+ * Any individual persisted grant [HiddenFolderAccess] hands back can still stop actually working
+ * later - the user can revoke it from system settings, or the folder itself can get deleted - in
+ * which case every [DocumentFile] call for *that* folder throws [SecurityException]. [scan] treats
+ * that exactly like that one folder never having been picked at all (see
+ * [HiddenFolderAccess.remove]) rather than crashing every refresh of the whole gallery from then
+ * on, while any other still-valid folders keep contributing their items as normal.
  */
 object HiddenMediaScanner {
 
@@ -43,14 +46,16 @@ object HiddenMediaScanner {
     private val videoExtensions =
         setOf("mp4", "mkv", "webm", "3gp", "3gpp", "mov", "avi", "m4v")
 
-    fun scan(context: Context): List<MediaItem> {
-        val treeUri = HiddenFolderAccess.treeUri(context) ?: return emptyList()
+    fun scan(context: Context): List<MediaItem> =
+        HiddenFolderAccess.treeUris(context).flatMap { treeUri -> scanTree(context, treeUri) }
+
+    private fun scanTree(context: Context, treeUri: Uri): List<MediaItem> {
         return try {
             val root = DocumentFile.fromTreeUri(context, treeUri) ?: return emptyList()
             val bucketName = root.name ?: return emptyList()
             scanFolder(root, bucketName)
         } catch (_: SecurityException) {
-            HiddenFolderAccess.clear(context)
+            HiddenFolderAccess.remove(context, treeUri)
             emptyList()
         }
     }
