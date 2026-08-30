@@ -1,6 +1,10 @@
 package de.zerogallery.ui.detail
 
+import android.content.Context
 import android.net.Uri
+import android.provider.Settings
+import android.view.Window
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -45,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -52,12 +58,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
 import de.zerogallery.ui.gallery.formatDuration
+import de.zerogallery.ui.util.findActivity
 import androidx.media3.common.MediaItem as Media3MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,6 +90,35 @@ private enum class VideoResizeMode(val frameLayoutMode: Int, val labelRes: Int) 
 
 /** How long the current mode's label stays visible after tapping the aspect-ratio button. */
 private const val ResizeModeLabelVisibleMillis = 1_200L
+
+/** Never let the brightness gesture dim the screen all the way to invisible/unrecoverable black. */
+private const val MinBrightnessFraction = 0.02f
+
+/**
+ * Which of the three hidden-chrome drag gestures (see [VideoPlayer]'s class doc) a single-finger
+ * drag has been recognized as, once it moves past touch slop - `null` until then, at which point
+ * it's still just a tap candidate.
+ */
+private enum class VideoDragGesture { SEEK, BRIGHTNESS, VOLUME }
+
+/**
+ * This window's current effective screen brightness as a 0f-1f fraction, used as the brightness
+ * gesture's starting point so the first drag frame doesn't visibly jump to some unrelated value.
+ *
+ * [Window.getAttributes]' `screenBrightness` is `-1f` ([android.view.WindowManager.LayoutParams
+ * .BRIGHTNESS_OVERRIDE_NONE]) unless a previous gesture already overrode it for this window, in
+ * which case it falls back to the actual system brightness setting (a plain read, needing no
+ * permission beyond what every app already has).
+ */
+private fun currentBrightnessFraction(context: android.content.Context, window: Window?): Float {
+    val windowOverride = window?.attributes?.screenBrightness ?: -1f
+    if (windowOverride in 0f..1f) return windowOverride
+    return try {
+        Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS) / 255f
+    } catch (e: Settings.SettingNotFoundException) {
+        0.5f
+    }
+}
 
 /**
  * Plays a single local video via Media3/ExoPlayer (Apache 2.0 - no licensing conflicts with this
@@ -124,17 +161,25 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  *
  * A horizontal drag *while [isChromeVisible] is false* scrubs the same way, live, instead of
  * swiping to the next/previous item in the pager - dragging across the full screen width covers
- * the entire video, same ratio as the [Slider]. This has to fully replace the pager's own gesture
- * handling rather than run alongside it: a custom `awaitEachGesture` loop consumes every move
- * event for the whole gesture as soon as the chrome is hidden (even before a direction is known),
- * so the pager never gets a chance to see any of it and start its own swipe-to-next-item drag -
- * only once the accumulated horizontal movement exceeds touch slop *and* dominates over vertical
- * movement does it actually start scrubbing; a vertical-dominant drag is still consumed (so it can
- * later drive brightness/volume gestures) but otherwise left a no-op for now. The same loop also
- * detects a plain tap (near-zero total movement) to toggle the chrome, replacing the plain
+ * the entire video, same ratio as the [Slider]. A vertical drag in that same state instead adjusts
+ * this window's screen brightness live if it started in the left half of the screen ([VideoDragGesture
+ * .BRIGHTNESS], see [currentBrightnessFraction]) - dragging the full screen height covers the
+ * entire 0-100% range - or is reserved for a future volume gesture if it started in the right half
+ * ([VideoDragGesture.VOLUME], currently a no-op). This has to fully replace the pager's own gesture
+ * handling rather than run alongside it: a custom `awaitEachGesture` loop consumes every move event
+ * for the whole gesture as soon as the chrome is hidden (even before a direction is known), so the
+ * pager never gets a chance to see any of it and start its own swipe-to-next-item drag - only once
+ * the accumulated movement exceeds touch slop does it decide which [VideoDragGesture] it actually
+ * is (horizontal-dominant vs. vertical, then which half it started in). The same loop also detects
+ * a plain tap (near-zero total movement) to toggle the chrome, replacing the plain
  * `Modifier.clickable` an earlier version of this composable used for that alone. While
  * [isChromeVisible] is true, nothing is consumed here at all, so the pager's normal swipe-to-next
  * behaviour keeps working exactly as before.
+ *
+ * The brightness override only applies to this `Activity`'s window for as long as this particular
+ * [VideoPlayer] instance is composed - it's released back to the system/user default the moment
+ * the user swipes to a different item (this composable is recreated per [uri]), rather than
+ * permanently leaking a dimmed screen into browsing photos or other videos afterwards.
  */
 @Composable
 fun VideoPlayer(
@@ -146,6 +191,7 @@ fun VideoPlayer(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val window = LocalView.current.context.findActivity()?.window
 
     val exoPlayer = remember(uri) {
         ExoPlayer.Builder(context).build().apply {
@@ -166,6 +212,13 @@ fun VideoPlayer(
         onDispose {
             exoPlayer.removeListener(listener)
             exoPlayer.release()
+            // Release this window's brightness override (if any) back to the system/user default
+            // - see class doc for why this shouldn't outlive this particular video.
+            window?.let { win ->
+                win.attributes = win.attributes.apply {
+                    screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                }
+            }
         }
     }
 
@@ -182,6 +235,11 @@ fun VideoPlayer(
     var positionMs by remember(exoPlayer) { mutableLongStateOf(0L) }
     var isSeeking by remember(exoPlayer) { mutableStateOf(false) }
     var seekPositionMs by remember(exoPlayer) { mutableFloatStateOf(0f) }
+
+    var isAdjustingBrightness by remember(exoPlayer) { mutableStateOf(false) }
+    var brightnessFraction by remember(exoPlayer) {
+        mutableFloatStateOf(currentBrightnessFraction(context, window))
+    }
 
     LaunchedEffect(exoPlayer, isChromeVisible) {
         while (isChromeVisible) {
@@ -215,8 +273,8 @@ fun VideoPlayer(
         )
 
         // See class doc: handles both the tap-to-toggle-chrome gesture and, while the chrome is
-        // hidden, a horizontal drag-to-scrub gesture that fully takes over from the pager's
-        // default swipe-to-next-item behaviour.
+        // hidden, the drag-to-scrub/brightness/volume gestures that fully take over from the
+        // pager's default swipe-to-next-item behaviour.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -224,9 +282,11 @@ fun VideoPlayer(
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         var totalDrag = Offset.Zero
-                        var isSeekGesture = false
+                        var lockedGesture: VideoDragGesture? = null
                         var seekGestureStartPositionMs = 0L
                         var seekGestureDurationMs = 1L
+                        var brightnessGestureStartFraction = 0f
+                        val isLeftHalf = down.position.x < size.width / 2f
 
                         do {
                             val event = awaitPointerEvent()
@@ -235,21 +295,54 @@ fun VideoPlayer(
                             totalDrag += delta
 
                             if (!isChromeVisible) {
-                                if (!isSeekGesture &&
-                                    abs(totalDrag.x) > viewConfiguration.touchSlop &&
-                                    abs(totalDrag.x) > abs(totalDrag.y)
+                                if (lockedGesture == null &&
+                                    (abs(totalDrag.x) > viewConfiguration.touchSlop ||
+                                        abs(totalDrag.y) > viewConfiguration.touchSlop)
                                 ) {
-                                    isSeekGesture = true
-                                    isSeeking = true
-                                    seekGestureStartPositionMs =
-                                        exoPlayer.currentPosition.coerceAtLeast(0L)
-                                    seekGestureDurationMs = exoPlayer.duration.coerceAtLeast(1L)
+                                    lockedGesture = when {
+                                        abs(totalDrag.x) > abs(totalDrag.y) -> VideoDragGesture.SEEK
+                                        isLeftHalf -> VideoDragGesture.BRIGHTNESS
+                                        else -> VideoDragGesture.VOLUME
+                                    }
+                                    when (lockedGesture) {
+                                        VideoDragGesture.SEEK -> {
+                                            isSeeking = true
+                                            seekGestureStartPositionMs =
+                                                exoPlayer.currentPosition.coerceAtLeast(0L)
+                                            seekGestureDurationMs =
+                                                exoPlayer.duration.coerceAtLeast(1L)
+                                        }
+
+                                        VideoDragGesture.BRIGHTNESS -> {
+                                            isAdjustingBrightness = true
+                                            brightnessGestureStartFraction = brightnessFraction
+                                        }
+
+                                        VideoDragGesture.VOLUME -> Unit
+                                    }
                                 }
-                                if (isSeekGesture) {
-                                    val deltaMs =
-                                        (totalDrag.x / size.width) * seekGestureDurationMs
-                                    seekPositionMs = (seekGestureStartPositionMs + deltaMs)
-                                        .coerceIn(0f, seekGestureDurationMs.toFloat())
+
+                                when (lockedGesture) {
+                                    VideoDragGesture.SEEK -> {
+                                        val deltaMs =
+                                            (totalDrag.x / size.width) * seekGestureDurationMs
+                                        seekPositionMs = (seekGestureStartPositionMs + deltaMs)
+                                            .coerceIn(0f, seekGestureDurationMs.toFloat())
+                                    }
+
+                                    VideoDragGesture.BRIGHTNESS -> {
+                                        val newFraction =
+                                            (brightnessGestureStartFraction - totalDrag.y / size.height)
+                                                .coerceIn(MinBrightnessFraction, 1f)
+                                        brightnessFraction = newFraction
+                                        window?.let { win ->
+                                            win.attributes = win.attributes.apply {
+                                                screenBrightness = newFraction
+                                            }
+                                        }
+                                    }
+
+                                    VideoDragGesture.VOLUME, null -> Unit
                                 }
                                 // Consume every move once the chrome is hidden, even before a
                                 // direction is known - see class doc for why.
@@ -257,11 +350,17 @@ fun VideoPlayer(
                             }
                         } while (event.changes.any { it.pressed })
 
-                        if (isSeekGesture) {
-                            exoPlayer.seekTo(seekPositionMs.toLong())
-                            isSeeking = false
-                        } else if (totalDrag.getDistance() < viewConfiguration.touchSlop) {
-                            onTap()
+                        when (lockedGesture) {
+                            VideoDragGesture.SEEK -> {
+                                exoPlayer.seekTo(seekPositionMs.toLong())
+                                isSeeking = false
+                            }
+
+                            VideoDragGesture.BRIGHTNESS -> isAdjustingBrightness = false
+
+                            VideoDragGesture.VOLUME, null -> {
+                                if (totalDrag.getDistance() < viewConfiguration.touchSlop) onTap()
+                            }
                         }
                     }
                 },
@@ -282,6 +381,30 @@ fun VideoPlayer(
                     .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             )
+        }
+
+        // Feedback for the drag-to-adjust-brightness gesture, left-aligned to match the screen
+        // half it's triggered from.
+        AnimatedVisibility(
+            visible = isAdjustingBrightness && !isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.CenterStart),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(start = 24.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Icon(imageVector = Icons.Filled.BrightnessMedium, contentDescription = null, tint = Color.White)
+                Text(
+                    text = "${(brightnessFraction * 100).roundToInt()}%",
+                    color = Color.White,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
         }
 
         AnimatedVisibility(
