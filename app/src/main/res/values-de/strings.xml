@@ -22,6 +22,15 @@
     <string name="hidden_folders_permission_confirm">Einstellungen öffnen</string>
     <string name="hidden_folders_permission_dismiss">Abbrechen</string>
 
+    <string name="overflow_menu_action">Weitere Optionen</string>
+    <string name="menu_item_video_gestures">Videogesten</string>
+    <string name="video_gestures_help_title">Videogesten</string>
+    <string name="video_gestures_help_intro">Während der Wiedergabe eines Videos mit ausgeblendeten Steuerelementen (einmal tippen zum Ausblenden):</string>
+    <string name="video_gestures_help_seek">Überall nach links/rechts wischen, um im Video vor- oder zurückzuspulen</string>
+    <string name="video_gestures_help_brightness">Auf der linken Hälfte nach oben/unten wischen, um die Bildschirmhelligkeit anzupassen</string>
+    <string name="video_gestures_help_volume">Auf der rechten Hälfte nach oben/unten wischen, um die Lautstärke anzupassen</string>
+    <string name="video_gestures_help_dismiss">Verstanden</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d Element</item>
         <item quantity="other">%d Elemente</item>

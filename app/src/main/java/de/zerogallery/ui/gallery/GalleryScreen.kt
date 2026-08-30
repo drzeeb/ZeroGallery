@@ -7,19 +7,26 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -240,6 +248,12 @@ private fun GalleryScreen(
     val windowWidthSizeClass = rememberWindowWidthSizeClass()
     val isFolderPicker = groupingMode == MediaGroupingMode.FOLDER && selectedFolderLabel == null
     val openedFolder = groupingMode == MediaGroupingMode.FOLDER && selectedFolderLabel != null
+    var isOverflowMenuExpanded by remember { mutableStateOf(false) }
+    var showVideoGesturesHelp by rememberSaveable { mutableStateOf(false) }
+
+    if (showVideoGesturesHelp) {
+        VideoGesturesHelpDialog(onDismiss = { showVideoGesturesHelp = false })
+    }
 
     Scaffold(
         topBar = {
@@ -291,6 +305,28 @@ private fun GalleryScreen(
                                 },
                                 contentDescription = stringResource(R.string.media_grouping_action),
                             )
+                        }
+                    }
+                    if (uiState is GalleryUiState.Content) {
+                        Box {
+                            IconButton(onClick = { isOverflowMenuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = stringResource(R.string.overflow_menu_action),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = isOverflowMenuExpanded,
+                                onDismissRequest = { isOverflowMenuExpanded = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.menu_item_video_gestures)) },
+                                    onClick = {
+                                        isOverflowMenuExpanded = false
+                                        showVideoGesturesHelp = true
+                                    },
+                                )
+                            }
                         }
                     }
                 },
@@ -411,5 +447,46 @@ private fun AllFilesAccessRationaleDialog(onConfirm: () -> Unit, onDismiss: () -
             }
         },
     )
+}
+
+/**
+ * Explains the three swipe gestures available in the video detail viewer while its overlay chrome
+ * is hidden (see [de.zerogallery.ui.detail.VideoPlayer]'s class doc) - they're otherwise completely
+ * undiscoverable, since hiding the chrome is itself just a single tap with no visual hint that
+ * anything about the available gestures then changes underneath it.
+ */
+@Composable
+private fun VideoGesturesHelpDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.video_gestures_help_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = stringResource(R.string.video_gestures_help_intro),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                VideoGestureHelpRow(Icons.Filled.SwapHoriz, R.string.video_gestures_help_seek)
+                VideoGestureHelpRow(Icons.Filled.BrightnessMedium, R.string.video_gestures_help_brightness)
+                VideoGestureHelpRow(Icons.AutoMirrored.Filled.VolumeUp, R.string.video_gestures_help_volume)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.video_gestures_help_dismiss))
+            }
+        },
+    )
+}
+
+@Composable
+private fun VideoGestureHelpRow(icon: ImageVector, textRes: Int) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(imageVector = icon, contentDescription = null)
+        Text(text = stringResource(textRes), style = MaterialTheme.typography.bodyMedium)
+    }
 }
 

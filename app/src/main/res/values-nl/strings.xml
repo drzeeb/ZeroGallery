@@ -22,6 +22,15 @@
     <string name="hidden_folders_permission_confirm">Instellingen openen</string>
     <string name="hidden_folders_permission_dismiss">Annuleren</string>
 
+    <string name="overflow_menu_action">Meer opties</string>
+    <string name="menu_item_video_gestures">Videogebaren</string>
+    <string name="video_gestures_help_title">Videogebaren</string>
+    <string name="video_gestures_help_intro">Tijdens het afspelen van een video met verborgen bedieningselementen (tik één keer om ze te verbergen):</string>
+    <string name="video_gestures_help_seek">Veeg overal naar links/rechts om door de video te spoelen</string>
+    <string name="video_gestures_help_brightness">Veeg omhoog/omlaag op de linkerhelft om de schermhelderheid aan te passen</string>
+    <string name="video_gestures_help_volume">Veeg omhoog/omlaag op de rechterhelft om het volume aan te passen</string>
+    <string name="video_gestures_help_dismiss">Begrepen</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

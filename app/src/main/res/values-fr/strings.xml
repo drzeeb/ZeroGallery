@@ -22,6 +22,15 @@
     <string name="hidden_folders_permission_confirm">Ouvrir les paramètres</string>
     <string name="hidden_folders_permission_dismiss">Annuler</string>
 
+    <string name="overflow_menu_action">Plus d\'options</string>
+    <string name="menu_item_video_gestures">Gestes vidéo</string>
+    <string name="video_gestures_help_title">Gestes vidéo</string>
+    <string name="video_gestures_help_intro">Pendant la lecture d\'une vidéo avec les commandes masquées (appuyez une fois pour les masquer) :</string>
+    <string name="video_gestures_help_seek">Balayez vers la gauche/droite n\'importe où pour naviguer dans la vidéo</string>
+    <string name="video_gestures_help_brightness">Balayez vers le haut/bas sur la moitié gauche pour ajuster la luminosité de l\'écran</string>
+    <string name="video_gestures_help_volume">Balayez vers le haut/bas sur la moitié droite pour ajuster le volume</string>
+    <string name="video_gestures_help_dismiss">Compris</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d élément</item>
         <item quantity="other">%d éléments</item>

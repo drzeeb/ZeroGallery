@@ -22,6 +22,15 @@
     <string name="hidden_folders_permission_confirm">Apri impostazioni</string>
     <string name="hidden_folders_permission_dismiss">Annulla</string>
 
+    <string name="overflow_menu_action">Altre opzioni</string>
+    <string name="menu_item_video_gestures">Gesti video</string>
+    <string name="video_gestures_help_title">Gesti video</string>
+    <string name="video_gestures_help_intro">Durante la riproduzione di un video con i controlli nascosti (tocca una volta per nasconderli):</string>
+    <string name="video_gestures_help_seek">Scorri verso sinistra/destra ovunque per scorrere il video</string>
+    <string name="video_gestures_help_brightness">Scorri verso l\'alto/basso sulla metà sinistra per regolare la luminosità dello schermo</string>
+    <string name="video_gestures_help_volume">Scorri verso l\'alto/basso sulla metà destra per regolare il volume</string>
+    <string name="video_gestures_help_dismiss">Capito</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d elemento</item>
         <item quantity="other">%d elementi</item>
