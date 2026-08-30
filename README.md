@@ -108,12 +108,17 @@ Two independent, opt-in targets, each its own boolean input:
   `production`) via the `play_store_track` input; `internal` is the right choice for a brand new
   listing still going through Google's mandatory closed-testing period.
 
-Enabling `fastlane` needs a Play Console **service account** set up once:
+Enabling `fastlane` needs a Play Console **service account** set up once - two separate permission
+systems are involved here, easy to mix up:
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/), create a service account
-   (any project) and generate a JSON key for it.
-2. In the Play Console, under *Setup → API access*, link that same Cloud project and grant the
-   service account at least the "Release manager" permission for this app.
+   (any project) and generate a JSON key for it. Skip the "grant this service account access to
+   project" step entirely while creating it - regular Google Cloud IAM roles (Viewer/Editor/...)
+   have no effect on the Play Developer API at all, so there's nothing to pick there.
+2. In the Play Console, under *Setup → API access*, that project's service accounts show up once
+   linked - click "Manage Play Console permissions" next to it and grant at least the "Release
+   manager" permission for this app specifically. This is the actual, and only, permission that
+   matters for `supply`.
 3. Base64-encode the downloaded JSON key (`base64 -w0 your-key.json`) and store it as the repo
    secret `PLAY_STORE_JSON_KEY_BASE64`.
 
