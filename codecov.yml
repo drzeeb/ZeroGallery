@@ -1,0 +1,24 @@
+# Codecov configuration for ZeroGallery.
+#
+# Coverage is measured by JaCoco on the "debug" variant's JVM unit tests only (app/src/test) -
+# the only tests that run headlessly in CI without an emulator/device (see the comment above the
+# `jacocoTestReport` task in app/build.gradle.kts for why Kover wasn't used instead, and which
+# Composable-only files are excluded from the report as untestable UI).
+#
+# Both checks are informational (not blocking): project coverage naturally lags behind for a
+# small, actively-developed app with lots of Compose UI, and a red X on every PR for that reason
+# alone isn't useful signal. Codecov is used here for trend visibility (the README badge, and
+# per-PR diff comments) rather than as a merge gate.
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: "reach, diff, flags, files"
+  require_changes: false
+
