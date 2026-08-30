@@ -36,6 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
 import androidx.media3.common.MediaItem as Media3MediaItem
 import androidx.media3.common.Player
@@ -90,6 +92,12 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * its label) is only shown while [isChromeVisible] is true, mirroring how most video players
  * separate "tap to show/hide controls" from "tap the actual button to control playback". While the
  * chrome is hidden, nothing at all is drawn on top of the video - no buttons, no icons.
+ *
+ * Playback is also paused whenever the app itself goes into the background (`Lifecycle.Event
+ * .ON_STOP` - covers the home button, switching apps, locking the screen, etc.), same as
+ * [isActive] pausing it when swiped off-screen within the pager. It intentionally does *not*
+ * auto-resume when the app comes back to the foreground - the user has to explicitly tap play
+ * again, same as e.g. YouTube, rather than audio/video suddenly starting back up on its own.
  */
 @Composable
 fun VideoPlayer(
@@ -127,6 +135,10 @@ fun VideoPlayer(
     DisposableEffect(isActive) {
         exoPlayer.playWhenReady = isActive
         onDispose { }
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        exoPlayer.pause()
     }
 
     var resizeModeIndex by remember(uri) { mutableIntStateOf(0) }
