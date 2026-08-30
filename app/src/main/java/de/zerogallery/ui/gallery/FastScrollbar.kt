@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +27,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -35,16 +40,25 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
-private val ThumbHeight = 48.dp
-private val ThumbWidth = 5.dp
-private val ThumbTouchWidth = 28.dp
+private val ThumbWidth = 32.dp
+private val ThumbHeight = 56.dp
+private val ThumbTouchWidth = 48.dp
+private val ThumbShape = RoundedCornerShape(
+    topStart = 16.dp,
+    bottomStart = 16.dp,
+    topEnd = 4.dp,
+    bottomEnd = 4.dp,
+)
 private val HideDelay = 1_000.milliseconds
 
 /**
- * A Google Photos-style "fast scroll" thumb overlaid on [MediaGrid]/[FolderGrid]: a small pill on
- * the right edge that tracks the grid's current scroll position, and can be dragged up/down to
- * jump directly to any position - much faster than flinging through a grid that can hold
- * thousands of items one screen at a time.
+ * A Google Photos-style "fast scroll" thumb overlaid on [MediaGrid]/[FolderGrid]: a rounded tab
+ * poking out from the right edge that tracks the grid's current scroll position, and can be
+ * dragged up/down to jump directly to any position - much faster than flinging through a grid
+ * that can hold thousands of items one screen at a time. Deliberately shaped as a wide, chunky tab
+ * (with a grip icon) rather than a thin scrollbar-style line, both to make it easy to actually hit
+ * with a fingertip and to make clear at a glance that it's an interactive handle, not just a
+ * passive position indicator.
  *
  * Only shown while the grid itself is actively being scrolled or while the thumb is being
  * dragged, fading out [HideDelay] after either stops so it doesn't clutter the grid at rest, same
@@ -67,6 +81,13 @@ private val HideDelay = 1_000.milliseconds
  * sequence as a normal scroll/fling regardless of any pointer-input pass/priority subtlety, since
  * being drawn visually on top of the grid alone doesn't decide which of two simultaneously-
  * registered drag detectors wins a competing *drag* gesture (unlike a plain tap).
+ *
+ * While dragging, [LazyGridState.scrollToItem] is only actually invoked when the drag has moved
+ * far enough to land on a *different* target item than last time, rather than on every single
+ * pixel of finger movement - each call forces the grid to jump straight to (and start loading
+ * thumbnails for) a whole new region, so firing it dozens of times per centimetre of travel made
+ * dragging visibly stutter as thumbnails were repeatedly requested and abandoned before they could
+ * ever finish loading.
  *
  * Position/dragging is necessarily approximate: [LazyGridState] never lays out (or even knows the
  * size of) items far outside the current viewport, so there's no real "total content height" to
@@ -116,12 +137,20 @@ internal fun FastScrollbar(
             .width(ThumbTouchWidth)
             .onSizeChanged { trackHeightPx = it.height.toFloat() }
             .pointerInput(gridState) {
+                var lastTargetIndex = -1
+
                 fun currentTravel() = (trackHeightPx - thumbHeightPx).coerceAtLeast(0f)
                 fun moveTo(y: Float) {
                     val travelNow = currentTravel()
                     dragThumbTopPx = (y - thumbHeightPx / 2).coerceIn(0f, travelNow)
-                    coroutineScope.launch {
-                        gridState.scrollToFraction(if (travelNow > 0f) dragThumbTopPx / travelNow else 0f)
+                    val fraction = if (travelNow > 0f) dragThumbTopPx / travelNow else 0f
+                    val totalItems = gridState.layoutInfo.totalItemsCount
+                    if (totalItems <= 0) return
+                    val targetIndex = (fraction.coerceIn(0f, 1f) * (totalItems - 1)).roundToInt()
+                        .coerceIn(0, totalItems - 1)
+                    if (targetIndex != lastTargetIndex) {
+                        lastTargetIndex = targetIndex
+                        coroutineScope.launch { gridState.scrollToItem(targetIndex) }
                     }
                 }
 
@@ -145,15 +174,23 @@ internal fun FastScrollbar(
             },
     ) {
         Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .align(Alignment.TopStart)
+                .align(Alignment.TopEnd)
                 .offset { IntOffset(0, thumbTopPx.roundToInt()) }
                 .width(ThumbWidth)
                 .height(ThumbHeight)
                 .alpha(alpha)
-                .clip(RoundedCornerShape(percent = 50))
+                .shadow(elevation = 2.dp, shape = ThumbShape)
+                .clip(ThumbShape)
                 .background(MaterialTheme.colorScheme.primary),
-        )
+        ) {
+            Icon(
+                imageVector = Icons.Filled.UnfoldMore,
+                contentDescription = null,
+                tint = Color.White,
+            )
+        }
     }
 }
 
@@ -172,15 +209,6 @@ internal fun LazyGridState.scrollProgress(): Float {
     val fractionalIndex = first.index + (-first.offset.y.toFloat() / itemHeight)
     val scrollableRange = (totalItems - visibleItems.size).coerceAtLeast(1)
     return (fractionalIndex / scrollableRange).coerceIn(0f, 1f)
-}
-
-/** Jumps to the item at [fraction] (0f..1f) through the grid's total item count. */
-internal suspend fun LazyGridState.scrollToFraction(fraction: Float) {
-    val totalItems = layoutInfo.totalItemsCount
-    if (totalItems <= 0) return
-    val targetIndex = (fraction.coerceIn(0f, 1f) * (totalItems - 1)).roundToInt()
-        .coerceIn(0, totalItems - 1)
-    scrollToItem(targetIndex)
 }
 
 
