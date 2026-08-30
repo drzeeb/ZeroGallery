@@ -11,6 +11,13 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Media3/ExoPlayer's manifest requests this to detect connection type for adaptive
+         streaming, which ZeroGallery never does (local playback only). Stripped to keep the
+         "no network capability whatsoever" guarantee airtight. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+
     <application
         android:name=".ZeroGalleryApplication"
         android:allowBackup="true"

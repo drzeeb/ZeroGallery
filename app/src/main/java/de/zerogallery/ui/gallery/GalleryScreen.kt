@@ -21,30 +21,51 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.zerogallery.R
+import de.zerogallery.ui.detail.MediaDetailScreen
 import de.zerogallery.ui.permission.MediaPermissions
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
 /**
- * Stateful entry point: wires up the runtime permission request to [GalleryViewModel] and
- * forwards the resulting [GalleryUiState] to the stateless [GalleryScreen].
+ * Stateful entry point: wires up the runtime permission request to [GalleryViewModel], tracks
+ * which item (if any) is open in the full-screen detail viewer, and forwards everything to the
+ * stateless [GalleryScreen].
+ *
+ * There's intentionally no navigation library here yet: with just these two destinations, a
+ * single `selectedIndex` is simpler than a `NavHost`. Should more top-level screens appear later
+ * (e.g. albums, settings), migrating to `androidx.navigation.compose` becomes worthwhile.
  */
 @Composable
 fun GalleryRoute(viewModel: GalleryViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedIndex by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { result -> viewModel.onPermissionResult(result.values.all { it }) }
 
-    GalleryScreen(
-        uiState = uiState,
-        onRequestPermission = { permissionLauncher.launch(MediaPermissions.required) },
-    )
+    val index = selectedIndex
+    val contentState = uiState
+    if (index != null && contentState is GalleryUiState.Content) {
+        MediaDetailScreen(
+            items = contentState.items,
+            initialIndex = index,
+            onClose = { selectedIndex = null },
+        )
+    } else {
+        GalleryScreen(
+            uiState = uiState,
+            onRequestPermission = { permissionLauncher.launch(MediaPermissions.required) },
+            onItemClick = { selectedIndex = it },
+        )
+    }
 }
 
 /**
@@ -54,14 +75,14 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
  * column count with the available width. On top of that, [windowWidthSizeClass] (Compact/Medium/
  * Expanded, see [de.zerogallery.ui.util.WindowWidthSizeClass]) drives finer layout decisions:
  * larger thumbnails and roomier padding on tablets, and a readable, non-edge-to-edge max width
- * for the permission/empty messages. Phase 4 will reuse this size class for a master-detail
- * layout (grid + detail pane side by side) on [de.zerogallery.ui.util.WindowWidthSizeClass.EXPANDED].
+ * for the permission/empty messages.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GalleryScreen(
     uiState: GalleryUiState,
     onRequestPermission: () -> Unit,
+    onItemClick: (index: Int) -> Unit,
 ) {
     val windowWidthSizeClass = rememberWindowWidthSizeClass()
 
@@ -80,6 +101,7 @@ private fun GalleryScreen(
                 is GalleryUiState.Empty -> EmptyGalleryMessage()
                 is GalleryUiState.Content -> MediaGrid(
                     items = uiState.items,
+                    onItemClick = onItemClick,
                     windowWidthSizeClass = windowWidthSizeClass,
                 )
             }

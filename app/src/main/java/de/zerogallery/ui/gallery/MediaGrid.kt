@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
 import coil3.compose.AsyncImage
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
@@ -39,10 +40,14 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
  * [windowWidthSizeClass] scales the minimum thumbnail size and the grid's spacing/padding up on
  * larger screens, so tablets get comfortably sized tiles and margins instead of many tiny,
  * edge-to-edge tiles.
+ *
+ * Tapping a tile invokes [onItemClick] with its index in [items], which the caller uses to open
+ * [de.zerogallery.ui.detail.MediaDetailScreen] at that page.
  */
 @Composable
 fun MediaGrid(
     items: List<MediaItem>,
+    onItemClick: (index: Int) -> Unit,
     windowWidthSizeClass: WindowWidthSizeClass = rememberWindowWidthSizeClass(),
 ) {
     val minThumbnailSize = when (windowWidthSizeClass) {
@@ -63,18 +68,19 @@ fun MediaGrid(
         verticalArrangement = Arrangement.spacedBy(spacing),
         horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        items(items = items, key = { it.id }) { item ->
-            MediaGridItem(item)
+        itemsIndexed(items = items, key = { _, item -> item.id }) { index, item ->
+            MediaGridItem(item = item, onClick = { onItemClick(index) })
         }
     }
 }
 
 @Composable
-private fun MediaGridItem(item: MediaItem) {
+private fun MediaGridItem(item: MediaItem, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(4.dp)),
+            .clip(RoundedCornerShape(4.dp))
+            .clickable(onClick = onClick),
     ) {
         AsyncImage(
             model = item.uri,
