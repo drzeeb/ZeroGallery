@@ -11,5 +11,8 @@
     <string name="video_resize_mode_action">Beeldverhouding video wijzigen</string>
     <string name="video_resize_mode_fit">Passend</string>
     <string name="video_resize_mode_stretch">Uitrekken</string>
+
+    <string name="media_grouping_action">Groepering wijzigen</string>
+    <string name="media_grouping_unknown_folder">Overig</string>
 </resources>
 

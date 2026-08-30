@@ -7,15 +7,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,12 +45,20 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
  * larger screens, so tablets get comfortably sized tiles and margins instead of many tiny,
  * edge-to-edge tiles.
  *
- * Tapping a tile invokes [onItemClick] with its index in [items], which the caller uses to open
- * [de.zerogallery.ui.detail.MediaDetailScreen] at that page.
+ * [groups] (see [groupMedia]) drives optional section headers - a blank [MediaGroup.label] (used
+ * for [MediaGroupingMode.NONE]) renders no header at all, just a continuous flat grid. Non-blank
+ * labels get a full-width header row above their section, e.g. "August 2026" or a folder name.
+ *
+ * Tapping a tile invokes [onItemClick] with its index into the *flattened* concatenation of all
+ * [groups] - i.e. its position in whatever order is currently displayed on screen, not
+ * necessarily the original chronological order (folder grouping reorders items into sections).
+ * The caller uses that index to open [de.zerogallery.ui.detail.MediaDetailScreen] at that page
+ * against that same flattened list, so swiping through the detail viewer always matches whatever
+ * order the grid is currently showing.
  */
 @Composable
 fun MediaGrid(
-    items: List<MediaItem>,
+    groups: List<MediaGroup>,
     onItemClick: (index: Int) -> Unit,
     windowWidthSizeClass: WindowWidthSizeClass = rememberWindowWidthSizeClass(),
 ) {
@@ -69,10 +80,33 @@ fun MediaGrid(
         verticalArrangement = Arrangement.spacedBy(spacing),
         horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        itemsIndexed(items = items, key = { _, item -> item.id }) { index, item ->
-            MediaGridItem(item = item, onClick = { onItemClick(index) })
+        var flatIndex = 0
+        for (group in groups) {
+            if (group.label.isNotBlank()) {
+                item(key = "header-${group.label}", span = { GridItemSpan(maxLineSpan) }) {
+                    MediaGroupHeader(label = group.label)
+                }
+            }
+            val startIndex = flatIndex
+            itemsIndexed(items = group.items, key = { _, item -> item.id }) { indexInGroup, item ->
+                val index = startIndex + indexInGroup
+                MediaGridItem(item = item, onClick = { onItemClick(index) })
+            }
+            flatIndex += group.items.size
         }
     }
+}
+
+@Composable
+private fun MediaGroupHeader(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+    )
 }
 
 @Composable

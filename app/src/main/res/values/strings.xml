@@ -11,5 +11,8 @@
     <string name="video_resize_mode_action">Change video aspect ratio</string>
     <string name="video_resize_mode_fit">Fit</string>
     <string name="video_resize_mode_stretch">Stretch</string>
+
+    <string name="media_grouping_action">Change grouping</string>
+    <string name="media_grouping_unknown_folder">Other</string>
 </resources>
 

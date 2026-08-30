@@ -11,4 +11,7 @@
     <string name="video_resize_mode_action">Changer le format d\'affichage de la vidéo</string>
     <string name="video_resize_mode_fit">Ajuster</string>
     <string name="video_resize_mode_stretch">Étirer</string>
+
+    <string name="media_grouping_action">Changer le regroupement</string>
+    <string name="media_grouping_unknown_folder">Autres</string>
 </resources>

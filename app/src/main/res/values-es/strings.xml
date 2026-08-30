@@ -12,4 +12,7 @@
     <string name="video_resize_mode_fit">Ajustar</string>
 
     <string name="video_resize_mode_stretch">Estirar</string>
+
+    <string name="media_grouping_action">Cambiar agrupación</string>
+    <string name="media_grouping_unknown_folder">Otros</string>
 </resources>

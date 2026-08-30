@@ -76,6 +76,7 @@ class MediaStoreRepository(
             add(MediaStore.MediaColumns.DISPLAY_NAME)
             add(MediaStore.MediaColumns.DATE_ADDED)
             add(MediaStore.MediaColumns.SIZE)
+            add(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME)
             if (mediaType == MediaType.VIDEO) {
                 add(MediaStore.Video.Media.DURATION)
             }
@@ -89,6 +90,8 @@ class MediaStoreRepository(
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
             val dateAddedColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+            val bucketColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME)
             val durationColumn = if (mediaType == MediaType.VIDEO) {
                 cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DURATION)
             } else {
@@ -105,6 +108,7 @@ class MediaStoreRepository(
                     dateAddedSeconds = cursor.getLong(dateAddedColumn),
                     sizeBytes = cursor.getLong(sizeColumn),
                     durationMillis = if (durationColumn >= 0) cursor.getLong(durationColumn) else null,
+                    bucketName = cursor.getString(bucketColumn) ?: "",
                 )
             }
         }
