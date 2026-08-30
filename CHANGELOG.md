@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- GitHub Pages site (`docs/`): landing page (`index.html`) and a Play Store-ready privacy policy (`privacy.html`) explaining that ZeroGallery collects, stores and transmits no data whatsoever
 - Full-screen detail viewer (`MediaDetailScreen`): swipeable `HorizontalPager` opened by tapping a grid tile
 - Pinch-to-zoom/pan for photos (`ZoomableAsyncImage`), resetting automatically when swiping to a different page
 - Inline video playback via Media3/ExoPlayer (`VideoPlayer`, Apache 2.0 - no GPL/LGPL licensing conflicts), auto-pausing as soon as a video page is swiped away
