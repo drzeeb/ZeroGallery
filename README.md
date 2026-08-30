@@ -15,7 +15,7 @@ No tracking. No internet access. No cloud. Just your media, your control.
 - 📷 **Fast, native scanning** of photos & videos via `MediaStore`
 - 🖼️ **Performant grid** with cached thumbnails (images & videos)
 - 📱💻 **Adaptive UI** – responsive layout for phones *and* tablets (dynamic column count, breakpoints)
-- 🔍 **Fullscreen viewer** with swipe navigation (`HorizontalPager`)
+- 🔍 **Fullscreen viewer** with swipe navigation (`HorizontalPager`), pinch- and double-tap-to-zoom
 - ▶️ **Video playback** via [Media3/ExoPlayer](https://developer.android.com/media/media3) (Apache 2.0, hardware-accelerated)
 - 🔒 **No `INTERNET` permission** – the app is technically incapable of network access
 
