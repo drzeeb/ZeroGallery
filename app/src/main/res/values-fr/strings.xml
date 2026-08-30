@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ZeroGallery</string>
+
+    <string name="permission_rationale_title">Accès aux photos et vidéos</string>
+    <string name="permission_rationale_body">ZeroGallery a besoin d\'accéder à vos photos et vidéos pour les afficher. Rien ne quitte jamais cet appareil.</string>
+    <string name="grant_access_action">Autoriser l\'accès</string>
+
+    <string name="empty_gallery_title">Aucune photo ou vidéo pour l\'instant</string>
+    <string name="empty_gallery_body">Les médias que vous capturez ou enregistrez sur cet appareil apparaîtront ici.</string>
+
+    <string name="video_resize_mode_action">Changer le format d\'affichage de la vidéo</string>
+    <string name="video_resize_mode_fit">Ajuster</string>
+    <string name="video_resize_mode_crop">Remplir (rogner)</string>
+    <string name="video_resize_mode_stretch">Étirer</string>
+</resources>

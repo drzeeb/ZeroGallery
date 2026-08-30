@@ -1,0 +1,14 @@
+<lint>
+    <!--
+        Media3's AspectRatioFrameLayout.RESIZE_MODE_* constants (used by VideoPlayer.kt to let
+        users cycle through fit/crop/stretch aspect-ratio modes, similar to VLC) are marked
+        @UnstableApi even though they're plain, stable resize-mode integers that have been part of
+        Media3's public surface for years. Opting in project-wide here is simpler and less noisy
+        than propagating @OptIn(UnstableApi::class)/@UnstableApi through every composable that
+        transitively calls into VideoPlayer.
+    -->
+    <issue id="UnsafeOptInUsageError">
+        <option name="opt-in" value="androidx.media3.common.util.UnstableApi" />
+    </issue>
+</lint>
+
