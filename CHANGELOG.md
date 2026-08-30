@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- Double-tap-to-zoom for photos in the detail viewer, like most other gallery apps: double-tapping toggles between the fitted 1x view and 3x zoom, centered on the tapped point rather than always the image center (`computeDoubleTapOffset`, unit-tested)
+- Double-tap-to-zoom for photos in the detail viewer, like most other gallery apps: double-tapping toggles between the fitted 1x view and 3x zoom, centered on the tapped point rather than always the image center (`computeDoubleTapOffset`, unit-tested). Double-tapping again while zoomed in zooms back out to 1x. Both directions are animated with a short, snappy 200ms tween (`Animatable`) instead of jumping instantly; pinch/pan continue to update instantly (`snapTo`) since the user's fingers are actively driving them
 
 ### Fixed
 - Detail viewer: swiping between photos didn't work at all. `ZoomableAsyncImage` used `detectTransformGestures`, which treats *any* single-finger movement as a "pan" and unconditionally consumes it - silently eating every horizontal drag before the enclosing `HorizontalPager` ever saw it. Replaced with a custom gesture detector that only consumes single-finger drags while the image is actually zoomed in (panning); at the default 1x fit, drags are left unconsumed so the pager can treat them as a normal swipe. Two-finger pinch-to-zoom still always works
