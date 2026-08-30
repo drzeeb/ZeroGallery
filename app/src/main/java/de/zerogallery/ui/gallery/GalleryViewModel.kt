@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -25,7 +26,13 @@ class GalleryViewModel(
 
     private val hasPermission = MutableStateFlow(false)
 
-    val uiState: StateFlow<GalleryUiState> = hasPermission
+    // Bumped by refresh() to force re-subscribing to repository.observeMedia() even when
+    // hasPermission's value hasn't changed - needed after the user grants "All files access" in
+    // system Settings and returns to the app, since that's a separate special permission
+    // MediaStoreRepository can't observe changes to the way it observes MediaStore itself.
+    private val refreshSignal = MutableStateFlow(0)
+
+    val uiState: StateFlow<GalleryUiState> = combine(hasPermission, refreshSignal) { granted, _ -> granted }
         .flatMapLatest { granted ->
             if (!granted) {
                 flowOf(GalleryUiState.PermissionRequired)
@@ -44,6 +51,11 @@ class GalleryViewModel(
     /** Called after the runtime permission request completes. */
     fun onPermissionResult(granted: Boolean) {
         hasPermission.value = granted
+    }
+
+    /** Forces media to be re-queried, e.g. after returning from the "All files access" Settings screen. */
+    fun refresh() {
+        refreshSignal.value++
     }
 
     class Factory(private val repository: MediaRepository) : ViewModelProvider.Factory {

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import de.zerogallery.data.filesystem.HiddenMediaScanner
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
 import de.zerogallery.domain.repository.MediaRepository
@@ -24,6 +25,11 @@ import kotlinx.coroutines.withContext
  * single, date-descending list. A [ContentObserver] is registered on both collections so that the
  * emitted list automatically refreshes when media is added, changed or removed on the device -
  * no polling required.
+ *
+ * Also merges in [HiddenMediaScanner]'s results: dot-prefixed "hidden" folders are never scanned
+ * into MediaStore by the platform at all, so no ContentResolver query can ever surface them - a
+ * raw filesystem walk is the only way. That's a no-op unless "All files access" has been granted
+ * (see [de.zerogallery.ui.permission.AllFilesAccessPermission]), so this is always safe to call.
  */
 class MediaStoreRepository(
     private val context: Context,
@@ -67,7 +73,8 @@ class MediaStoreRepository(
             collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
             mediaType = MediaType.VIDEO,
         )
-        (images + videos).sortedByDescending { it.dateAddedSeconds }
+        val hidden = HiddenMediaScanner.scan(context)
+        (images + videos + hidden).sortedByDescending { it.dateAddedSeconds }
     }
 
     private fun queryCollection(collection: Uri, mediaType: MediaType): List<MediaItem> {

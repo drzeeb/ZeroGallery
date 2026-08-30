@@ -1,5 +1,6 @@
 package de.zerogallery.ui.gallery
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +45,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
 import de.zerogallery.ui.detail.MediaDetailScreen
+import de.zerogallery.ui.permission.AllFilesAccessPermission
 import de.zerogallery.ui.permission.MediaPermissions
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
@@ -82,14 +85,40 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     var groupingMode by rememberSaveable { mutableStateOf(MediaGroupingMode.NONE) }
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
+    var showAllFilesAccessRationale by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { result -> viewModel.onPermissionResult(result.values.all { it }) }
 
+    val allFilesAccessLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        if (AllFilesAccessPermission.isGranted()) {
+            showHidden = true
+        }
+        viewModel.refresh()
+    }
+
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         viewModel.onPermissionResult(MediaPermissions.hasAll(context))
+        viewModel.refresh()
+    }
+
+    if (showAllFilesAccessRationale) {
+        AllFilesAccessRationaleDialog(
+            onConfirm = {
+                showAllFilesAccessRationale = false
+                // Only ever shown once !AllFilesAccessPermission.isGranted(), which implies API
+                // 30+ - the explicit check here just satisfies lint's static analysis, which can't
+                // follow that implication across the showAllFilesAccessRationale state indirection.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    allFilesAccessLauncher.launch(AllFilesAccessPermission.requestIntent(context))
+                }
+            },
+            onDismiss = { showAllFilesAccessRationale = false },
+        )
     }
 
     val contentState = uiState
@@ -99,12 +128,11 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             // The "show hidden" toggle only makes sense for MediaGroupingMode.FOLDER: hidden
             // items are keyed off their *folder* (see MediaGrouping.isHidden), so folding them
             // into a flat NONE/DATE grid would just silently drop items with no way to tell why -
-            // whereas here they cleanly disappear as whole folder tiles/sections.
-            val items = if (groupingMode == MediaGroupingMode.FOLDER) {
-                filterHidden(contentState.items, showHidden)
-            } else {
-                contentState.items
-            }
+            // whereas here they cleanly disappear as whole folder tiles/sections. That also means
+            // hidden items must never leak into NONE/DATE regardless of the toggle's state - it
+            // only has any effect while actually grouping by folder.
+            val effectiveShowHidden = showHidden && groupingMode == MediaGroupingMode.FOLDER
+            val items = filterHidden(contentState.items, effectiveShowHidden)
             groupMedia(items, groupingMode, unknownFolderLabel)
         } else {
             emptyList()
@@ -147,7 +175,13 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
                 groupingMode = it
                 selectedFolderLabel = null
             },
-            onShowHiddenChange = { showHidden = it },
+            onShowHiddenChange = { wantShown ->
+                if (wantShown && !AllFilesAccessPermission.isGranted()) {
+                    showAllFilesAccessRationale = true
+                } else {
+                    showHidden = wantShown
+                }
+            },
             onFolderOpen = { selectedFolderLabel = it },
             onFolderBack = { selectedFolderLabel = null },
             onRequestPermission = { permissionLauncher.launch(MediaPermissions.required) },
@@ -323,5 +357,30 @@ private fun EmptyGalleryMessage() {
             style = MaterialTheme.typography.bodyMedium,
         )
     }
+}
+
+/**
+ * Explains *why* showing hidden folders needs the special, powerful "All files access" permission
+ * (see [AllFilesAccessPermission]) - unlike the initial media permission, this can't just be
+ * requested via a system dialog, so the user needs to understand what they're about to be sent to
+ * a Settings screen for and why a normal permission wasn't enough, before being sent there.
+ */
+@Composable
+private fun AllFilesAccessRationaleDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.hidden_folders_permission_title)) },
+        text = { Text(stringResource(R.string.hidden_folders_permission_body)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.hidden_folders_permission_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.hidden_folders_permission_dismiss))
+            }
+        },
+    )
 }
 

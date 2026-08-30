@@ -17,6 +17,10 @@
 
     <string name="hidden_folders_show_action">Afficher les dossiers masqués</string>
     <string name="hidden_folders_hide_action">Masquer les dossiers masqués</string>
+    <string name="hidden_folders_permission_title">Afficher les dossiers masqués ?</string>
+    <string name="hidden_folders_permission_body">Les dossiers masqués (leur nom commence par un point, par ex. utilisés par une application de coffre-fort ou de messagerie) ne sont jamais analysés par l\'index multimédia d\'Android. ZeroGallery a donc besoin de l\'autorisation « Accès à tous les fichiers » pour les lire directement. Vous serez redirigé vers un écran des paramètres système pour l\'accorder.</string>
+    <string name="hidden_folders_permission_confirm">Ouvrir les paramètres</string>
+    <string name="hidden_folders_permission_dismiss">Annuler</string>
 
     <plurals name="media_folder_item_count">
         <item quantity="one">%d élément</item>
