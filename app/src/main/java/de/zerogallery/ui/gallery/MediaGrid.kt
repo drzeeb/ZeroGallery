@@ -48,14 +48,14 @@ import de.zerogallery.ui.util.WindowWidthSizeClass
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
 /** Minimum tile size and inter-tile spacing for both [MediaGrid] and [FolderGrid]. */
-private fun gridMinThumbnailSize(windowWidthSizeClass: WindowWidthSizeClass) =
+internal fun gridMinThumbnailSize(windowWidthSizeClass: WindowWidthSizeClass) =
     when (windowWidthSizeClass) {
         WindowWidthSizeClass.COMPACT -> 120.dp
         WindowWidthSizeClass.MEDIUM -> 140.dp
         WindowWidthSizeClass.EXPANDED -> 160.dp
     }
 
-private fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
+internal fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
     when (windowWidthSizeClass) {
         WindowWidthSizeClass.COMPACT -> 2.dp
         WindowWidthSizeClass.MEDIUM -> 4.dp

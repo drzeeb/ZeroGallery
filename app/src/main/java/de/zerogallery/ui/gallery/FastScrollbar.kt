@@ -198,18 +198,48 @@ internal fun FastScrollbar(
  * Approximate normalized (0f..1f) scroll progress, accounting for partial scroll within the first
  * visible item (not just its index) so the thumb moves smoothly rather than snapping between
  * discrete steps - see [FastScrollbar]'s class doc for why this can only ever be approximate.
+ *
+ * Just extracts the primitive values [LazyGridState.layoutInfo] currently holds and delegates the
+ * actual math to [computeScrollProgress] - a plain, unit-testable function with no Compose/Android
+ * dependency, since [androidx.compose.foundation.lazy.grid.LazyGridLayoutInfo] itself can only ever
+ * be produced by an actual laid-out grid (no usable public constructor), making this wrapper itself
+ * untestable without an instrumented/Robolectric test.
  */
 internal fun LazyGridState.scrollProgress(): Float {
     val info = layoutInfo
-    val totalItems = info.totalItemsCount
     val visibleItems = info.visibleItemsInfo
-    if (totalItems <= 0 || visibleItems.isEmpty()) return 0f
-    val first = visibleItems.first()
-    val itemHeight = first.size.height.takeIf { it > 0 } ?: return 0f
-    val fractionalIndex = first.index + (-first.offset.y.toFloat() / itemHeight)
-    val scrollableRange = (totalItems - visibleItems.size).coerceAtLeast(1)
+    val first = visibleItems.firstOrNull() ?: return 0f
+    return computeScrollProgress(
+        totalItemCount = info.totalItemsCount,
+        visibleItemCount = visibleItems.size,
+        firstVisibleItemIndex = first.index,
+        firstVisibleItemOffsetY = first.offset.y,
+        firstVisibleItemHeight = first.size.height,
+    )
+}
+
+/**
+ * Pure math behind [LazyGridState.scrollProgress] - see its doc for why this is split out.
+ *
+ * [firstVisibleItemOffsetY] is how far the first visible item's top edge has scrolled past the
+ * top of the viewport, in px (0 when it's fully in view, negative as it scrolls upward out of
+ * frame) - together with [firstVisibleItemHeight] this turns a whole-item index into a smooth
+ * fractional position, rather than the thumb only ever moving in discrete per-row jumps.
+ */
+internal fun computeScrollProgress(
+    totalItemCount: Int,
+    visibleItemCount: Int,
+    firstVisibleItemIndex: Int,
+    firstVisibleItemOffsetY: Int,
+    firstVisibleItemHeight: Int,
+): Float {
+    if (totalItemCount <= 0 || visibleItemCount <= 0 || firstVisibleItemHeight <= 0) return 0f
+    val fractionalIndex = firstVisibleItemIndex + (-firstVisibleItemOffsetY.toFloat() / firstVisibleItemHeight)
+    val scrollableRange = (totalItemCount - visibleItemCount).coerceAtLeast(1)
     return (fractionalIndex / scrollableRange).coerceIn(0f, 1f)
 }
+
+
 
 
 
