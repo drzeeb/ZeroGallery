@@ -10,7 +10,6 @@
 
     <string name="video_resize_mode_action">Beeldverhouding video wijzigen</string>
     <string name="video_resize_mode_fit">Passend</string>
-    <string name="video_resize_mode_crop">Vullen (bijsnijden)</string>
     <string name="video_resize_mode_stretch">Uitrekken</string>
 </resources>
 

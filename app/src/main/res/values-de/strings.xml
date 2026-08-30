@@ -10,6 +10,5 @@
 
     <string name="video_resize_mode_action">Video-Seitenverhältnis ändern</string>
     <string name="video_resize_mode_fit">Einpassen</string>
-    <string name="video_resize_mode_crop">Füllen (zuschneiden)</string>
     <string name="video_resize_mode_stretch">Strecken</string>
 </resources>

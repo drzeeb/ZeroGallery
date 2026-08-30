@@ -10,6 +10,6 @@
 
     <string name="video_resize_mode_action">Cambiar relación de aspecto del vídeo</string>
     <string name="video_resize_mode_fit">Ajustar</string>
-    <string name="video_resize_mode_crop">Rellenar (recortar)</string>
+
     <string name="video_resize_mode_stretch">Estirar</string>
 </resources>
