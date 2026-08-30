@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `publish.yml` no longer rebuilds and re-signs the app from scratch (duplicating everything `release.yml` already did) - it now downloads the exact `.aab` already built, signed and attached to that tag's GitHub Release by `release.yml`, completely unmodified, and hands that same file straight to fastlane. This is the actual point of having two separate workflows: retrying a failed Play Store upload no longer needs the release keystore secrets at all in this job, and can never produce a bundle that differs byte-for-byte from the one already published as a GitHub Release for that version. Dropped the now-pointless `bundle` input (re-attaching an artifact that's already attached) along with all the build/sign/Gradle/JDK steps this workflow never needed in the first place
+
 ## [1.0.0] - 2026-08-30
 
 ### Added
