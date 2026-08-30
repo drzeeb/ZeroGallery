@@ -170,21 +170,20 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     }
 
     // Skips the app's own confirmation dialog whenever Android will already show its own
-    // scoped-storage confirmation for *every* item being deleted (content:// items on API 30+,
-    // via MediaDeleter.createDeleteRequest) - asking the user twice in a row to confirm the same
-    // deletion is redundant and confusing. Still shown whenever at least one item wouldn't
-    // otherwise get any confirmation at all: HiddenMediaScanner's file:// items (no OS flow
-    // exists for those on any API level) and, below API 30, content:// items too
-    // (createDeleteRequest is only available on R+).
+    // scoped-storage confirmation for the items being deleted (MediaDeleter.needsSystemConfirmation)
+    // - asking the user twice in a row to confirm the same deletion is redundant and confusing.
+    // That's only true for regular content:// items on API 30+ without "All files access" though:
+    // once that's granted (or below API 30), there's no such system dialog at all - including for
+    // HiddenMediaScanner's file:// items, which never get one on any API level - so the app's own
+    // dialog is shown instead, as the only safety net left.
     fun requestDelete(items: List<MediaItem>) {
-        val needsOwnConfirmation = Build.VERSION.SDK_INT < Build.VERSION_CODES.R ||
-            items.any { it.uri.scheme == "file" }
-        if (needsOwnConfirmation) {
-            pendingDeleteItems = items
-        } else {
+        if (MediaDeleter.needsSystemConfirmation(context)) {
             performDelete(items)
+        } else {
+            pendingDeleteItems = items
         }
     }
+
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
         viewModel.onPermissionResult(MediaPermissions.hasAll(context))
