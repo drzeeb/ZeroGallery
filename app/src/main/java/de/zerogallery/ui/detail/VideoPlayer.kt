@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,15 +85,24 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * own touch handling (seek bar drag, tap-to-show/hide controls). Nested inside a Compose
  * `HorizontalPager`, that native touch dispatch can permanently steal the pager's swipe gesture
  * after the first page change (a well-known Android View/Compose interop pitfall). To avoid this,
- * the controller is disabled and play/pause is instead handled by a plain Compose `clickable`
- * overlay, which only reacts to taps and lets horizontal drags pass through to the pager untouched.
+ * the controller is disabled and play/pause is instead handled by a dedicated Compose button.
  *
- * [onTap] additionally fires on every such tap, letting the caller (e.g. [MediaDetailScreen]) toggle
- * its own overlay chrome alongside the play/pause toggle - same tap-to-toggle-chrome convention
- * used by [ZoomableAsyncImage] for photos.
+ * Tapping *anywhere* on the video only toggles [isChromeVisible] via [onTap] - it deliberately does
+ * *not* also toggle play/pause, unlike an earlier version of this screen. Coupling the two meant
+ * there was no way to hide the chrome for a clean, distraction-free fullscreen view without also
+ * pausing the video. Instead, a dedicated play/pause button (along with the aspect-ratio button and
+ * its label) is only shown while [isChromeVisible] is true, mirroring how most video players
+ * separate "tap to show/hide controls" from "tap the actual button to control playback". While the
+ * chrome is hidden, nothing at all is drawn on top of the video - no buttons, no icons.
  */
 @Composable
-fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier, onTap: () -> Unit = {}) {
+fun VideoPlayer(
+    uri: Uri,
+    isActive: Boolean,
+    isChromeVisible: Boolean,
+    modifier: Modifier = Modifier,
+    onTap: () -> Unit = {},
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -139,67 +149,84 @@ fun VideoPlayer(uri: Uri, isActive: Boolean, modifier: Modifier = Modifier, onTa
             update = { playerView -> playerView.resizeMode = resizeMode.frameLayoutMode },
         )
 
+        // Tapping anywhere only toggles the chrome (see class doc) - it never touches playback.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                ) {
-                    if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
-                    onTap()
-                },
-            contentAlignment = Alignment.Center,
+                    onClick = onTap,
+                ),
+        )
+
+        AnimatedVisibility(
+            visible = isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            if (!isPlaying) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                        .padding(12.dp),
-                )
-            }
-        }
+            Box(modifier = Modifier.fillMaxSize()) {
+                IconButton(
+                    onClick = {
+                        if (exoPlayer.isPlaying) exoPlayer.pause() else exoPlayer.play()
+                    },
+                    modifier = Modifier.align(Alignment.Center),
+                ) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                            .padding(12.dp),
+                    )
+                }
 
-        // Top padding clears MediaDetailScreen's overlay app bar (status bar + ~56.dp title bar)
-        // so this button doesn't sit underneath it when the chrome is visible.
-        Box(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(top = 56.dp, end = 8.dp, bottom = 8.dp)) {
-            IconButton(
-                onClick = {
-                    resizeModeIndex = (resizeModeIndex + 1) % VideoResizeMode.entries.size
-                    isResizeModeLabelVisible = true
-                    coroutineScope.launch {
-                        delay(ResizeModeLabelVisibleMillis)
-                        isResizeModeLabelVisible = false
+                // Top padding clears MediaDetailScreen's overlay app bar (status bar + ~56.dp title
+                // bar) so this button doesn't sit underneath it.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .padding(top = 56.dp, end = 8.dp, bottom = 8.dp),
+                ) {
+                    IconButton(
+                        onClick = {
+                            resizeModeIndex = (resizeModeIndex + 1) % VideoResizeMode.entries.size
+                            isResizeModeLabelVisible = true
+                            coroutineScope.launch {
+                                delay(ResizeModeLabelVisibleMillis)
+                                isResizeModeLabelVisible = false
+                            }
+                        },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.AspectRatio,
+                            contentDescription = stringResource(R.string.video_resize_mode_action),
+                            tint = Color.White,
+                        )
                     }
-                },
-                modifier = Modifier.align(Alignment.TopEnd),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AspectRatio,
-                    contentDescription = stringResource(R.string.video_resize_mode_action),
-                    tint = Color.White,
-                )
-            }
 
-            AnimatedVisibility(
-                visible = isResizeModeLabelVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 56.dp, end = 8.dp),
-            ) {
-                Text(
-                    text = stringResource(resizeMode.labelRes),
-                    color = Color.White,
-                    modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                )
+                    AnimatedVisibility(
+                        visible = isResizeModeLabelVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 56.dp, end = 8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(resizeMode.labelRes),
+                            color = Color.White,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
+                }
             }
         }
     }

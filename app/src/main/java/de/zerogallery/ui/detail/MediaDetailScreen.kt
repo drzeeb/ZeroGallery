@@ -111,6 +111,7 @@ fun MediaDetailScreen(
                     MediaType.VIDEO -> VideoPlayer(
                         uri = item.uri,
                         isActive = pagerState.currentPage == page,
+                        isChromeVisible = isChromeVisible,
                         onTap = { isChromeVisible = !isChromeVisible },
                     )
                 }
