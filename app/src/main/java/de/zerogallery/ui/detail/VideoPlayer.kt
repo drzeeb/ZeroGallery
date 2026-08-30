@@ -5,7 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,7 +40,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -117,6 +121,20 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * thumb back to the *actual* (pre-seek) playback position on every tick; the real seek only
  * happens once the drag ends (`onValueChangeFinished`), not on every intermediate value while
  * dragging, to avoid flooding the player with seek requests.
+ *
+ * A horizontal drag *while [isChromeVisible] is false* scrubs the same way, live, instead of
+ * swiping to the next/previous item in the pager - dragging across the full screen width covers
+ * the entire video, same ratio as the [Slider]. This has to fully replace the pager's own gesture
+ * handling rather than run alongside it: a custom `awaitEachGesture` loop consumes every move
+ * event for the whole gesture as soon as the chrome is hidden (even before a direction is known),
+ * so the pager never gets a chance to see any of it and start its own swipe-to-next-item drag -
+ * only once the accumulated horizontal movement exceeds touch slop *and* dominates over vertical
+ * movement does it actually start scrubbing; a vertical-dominant drag is still consumed (so it can
+ * later drive brightness/volume gestures) but otherwise left a no-op for now. The same loop also
+ * detects a plain tap (near-zero total movement) to toggle the chrome, replacing the plain
+ * `Modifier.clickable` an earlier version of this composable used for that alone. While
+ * [isChromeVisible] is true, nothing is consumed here at all, so the pager's normal swipe-to-next
+ * behaviour keeps working exactly as before.
  */
 @Composable
 fun VideoPlayer(
@@ -180,6 +198,10 @@ fun VideoPlayer(
     var isResizeModeLabelVisible by remember(uri) { mutableStateOf(false) }
     val resizeMode = VideoResizeMode.entries[resizeModeIndex]
 
+    // Reflects whichever is currently authoritative: the live drag/slider value while seeking,
+    // the polled playback position otherwise.
+    val displayPositionMs = if (isSeeking) seekPositionMs.toLong() else positionMs
+
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -192,16 +214,75 @@ fun VideoPlayer(
             update = { playerView -> playerView.resizeMode = resizeMode.frameLayoutMode },
         )
 
-        // Tapping anywhere only toggles the chrome (see class doc) - it never touches playback.
+        // See class doc: handles both the tap-to-toggle-chrome gesture and, while the chrome is
+        // hidden, a horizontal drag-to-scrub gesture that fully takes over from the pager's
+        // default swipe-to-next-item behaviour.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onTap,
-                ),
+                .pointerInput(isChromeVisible, exoPlayer) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var totalDrag = Offset.Zero
+                        var isSeekGesture = false
+                        var seekGestureStartPositionMs = 0L
+                        var seekGestureDurationMs = 1L
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            val delta = change.positionChange()
+                            totalDrag += delta
+
+                            if (!isChromeVisible) {
+                                if (!isSeekGesture &&
+                                    abs(totalDrag.x) > viewConfiguration.touchSlop &&
+                                    abs(totalDrag.x) > abs(totalDrag.y)
+                                ) {
+                                    isSeekGesture = true
+                                    isSeeking = true
+                                    seekGestureStartPositionMs =
+                                        exoPlayer.currentPosition.coerceAtLeast(0L)
+                                    seekGestureDurationMs = exoPlayer.duration.coerceAtLeast(1L)
+                                }
+                                if (isSeekGesture) {
+                                    val deltaMs =
+                                        (totalDrag.x / size.width) * seekGestureDurationMs
+                                    seekPositionMs = (seekGestureStartPositionMs + deltaMs)
+                                        .coerceIn(0f, seekGestureDurationMs.toFloat())
+                                }
+                                // Consume every move once the chrome is hidden, even before a
+                                // direction is known - see class doc for why.
+                                change.consume()
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        if (isSeekGesture) {
+                            exoPlayer.seekTo(seekPositionMs.toLong())
+                            isSeeking = false
+                        } else if (totalDrag.getDistance() < viewConfiguration.touchSlop) {
+                            onTap()
+                        }
+                    }
+                },
         )
+
+        // Feedback for the drag-to-scrub gesture while the chrome (and with it, the regular seek
+        // bar) is hidden - without this there'd be no indication at all of where a scrub landed.
+        AnimatedVisibility(
+            visible = isSeeking && !isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            Text(
+                text = "${formatDuration(displayPositionMs)} / ${formatDuration(durationMs)}",
+                color = Color.White,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
 
         AnimatedVisibility(
             visible = isChromeVisible,
@@ -271,10 +352,10 @@ fun VideoPlayer(
                     }
                 }
 
-                // Seek bar, bottom-aligned. displayPositionMs reflects the drag in progress (if
-                // any) rather than the polled playback position, so the thumb doesn't jump back
-                // to the pre-seek position while the user is still dragging it.
-                val displayPositionMs = if (isSeeking) seekPositionMs.toLong() else positionMs
+                // Seek bar, bottom-aligned. displayPositionMs (hoisted above, also driving the
+                // hidden-chrome scrub indicator) reflects the drag in progress (if any) rather
+                // than the polled playback position, so the thumb doesn't jump back to the
+                // pre-seek position while the user is still dragging it.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
