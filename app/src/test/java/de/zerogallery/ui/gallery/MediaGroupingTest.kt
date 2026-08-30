@@ -152,6 +152,24 @@ class MediaGroupingTest {
     fun `currentGroupLabel returns blank when there are no boundaries at all`() {
         assertEquals("", currentGroupLabel(emptyList(), gridItemIndex = 0))
     }
+
+    @Test
+    fun `computeStickyHeaderOffset stays in place when there is nothing to push against`() {
+        assertEquals(0f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = null))
+        assertEquals(0f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 150f))
+    }
+
+    @Test
+    fun `computeStickyHeaderOffset pushes up by exactly the overlap as the next header approaches`() {
+        assertEquals(-40f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 60f))
+        assertEquals(-90f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 10f))
+    }
+
+    @Test
+    fun `computeStickyHeaderOffset never pushes further than fully off-screen`() {
+        assertEquals(-100f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 0f))
+        assertEquals(-100f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = -20f))
+    }
 }
 
 
