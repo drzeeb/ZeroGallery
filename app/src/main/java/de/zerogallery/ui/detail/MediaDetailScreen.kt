@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
 
@@ -46,7 +47,14 @@ fun MediaDetailScreen(
         containerColor = Color.Black,
         topBar = {
             TopAppBar(
-                title = { Text(text = currentItem?.displayName.orEmpty(), color = Color.White) },
+                title = {
+                    Text(
+                        text = currentItem?.displayName.orEmpty(),
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
                         Icon(
