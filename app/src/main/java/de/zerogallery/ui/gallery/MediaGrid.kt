@@ -1,5 +1,8 @@
 package de.zerogallery.ui.gallery
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -30,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -50,6 +55,7 @@ import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
 import de.zerogallery.ui.util.WindowWidthSizeClass
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
+
 
 /** Minimum tile size and inter-tile spacing for both [MediaGrid] and [FolderGrid]. */
 internal fun gridMinThumbnailSize(windowWidthSizeClass: WindowWidthSizeClass) =
@@ -88,7 +94,13 @@ internal fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
  * swiping through the detail viewer always matches whatever order the grid is currently showing.
  *
  * A [FastScrollbar] thumb is overlaid on the right edge, letting a large grid be dragged through
- * quickly instead of only flinging one screen at a time - see its class doc for details.
+ * quickly instead of only flinging one screen at a time - see its class doc for details. While
+ * it's being dragged, a floating pill in the top-start corner shows whichever section's label the
+ * grid is currently scrolled to (e.g. "August 2026") - dragging through months/years' worth of
+ * items in a couple of seconds otherwise gives no indication of *where* you've actually landed
+ * until you let go and look at the header itself, which may well have already scrolled out of
+ * view above the visible tiles by then. Blank labels (see above) never show anything, so this
+ * only ever actually appears while grouped by [MediaGroupingMode.DATE].
  *
  * Long-pressing a tile invokes [onItemLongClick] with that item - used to enter/extend a
  * multi-select mode (see [de.zerogallery.ui.gallery.GalleryRoute]). While [selectedIds] is
@@ -108,6 +120,13 @@ fun MediaGrid(
     val spacing = gridSpacing(windowWidthSizeClass)
     val gridState = rememberLazyGridState()
     var isDraggingThumb by remember { mutableStateOf(false) }
+    val boundaries = remember(groups) { groupBoundaries(groups) }
+    val currentLabel by remember(boundaries) {
+        derivedStateOf {
+            val firstVisibleIndex = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+            currentGroupLabel(boundaries, firstVisibleIndex)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
@@ -148,7 +167,32 @@ fun MediaGrid(
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight(),
         )
+
+        AnimatedVisibility(
+            visible = isDraggingThumb && currentLabel.isNotBlank(),
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp),
+        ) {
+            CurrentGroupLabelPill(label = currentLabel)
+        }
     }
+}
+
+@Composable
+private fun CurrentGroupLabelPill(label: String) {
+    Text(
+        text = label,
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+    )
 }
 
 /**

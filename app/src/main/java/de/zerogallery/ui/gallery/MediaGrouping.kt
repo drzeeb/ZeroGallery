@@ -86,4 +86,30 @@ internal fun MediaItem.isHidden(): Boolean =
 fun filterHidden(items: List<MediaItem>, showHidden: Boolean): List<MediaItem> =
     if (showHidden) items else items.filterNot { it.isHidden() }
 
+/**
+ * Maps each of [groups] to the index its section starts at within [MediaGrid]'s flattened
+ * `LazyVerticalGrid` item list - i.e. counting the (optional) header row itself as well as every
+ * preceding group's items, not just [MediaGroup.items]' own flat index. Used by [currentGroupLabel]
+ * to look up which section a given scroll position currently falls within, driving the live
+ * "August 2026"-style indicator [MediaGrid] shows while the fast scroll thumb is being dragged.
+ */
+internal fun groupBoundaries(groups: List<MediaGroup>): List<Pair<Int, String>> {
+    var gridItemIndex = 0
+    return groups.map { group ->
+        val boundary = gridItemIndex to group.label
+        if (group.label.isNotBlank()) gridItemIndex += 1
+        gridItemIndex += group.items.size
+        boundary
+    }
+}
+
+/**
+ * Which group's label [gridItemIndex] (a `LazyVerticalGrid` item index, as produced by
+ * [groupBoundaries] - header rows included) currently falls within - blank if [boundaries] is
+ * empty or [gridItemIndex] precedes every boundary.
+ */
+internal fun currentGroupLabel(boundaries: List<Pair<Int, String>>, gridItemIndex: Int): String =
+    boundaries.lastOrNull { it.first <= gridItemIndex }?.second ?: ""
+
+
 
