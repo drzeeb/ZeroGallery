@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backs MediaSharer's FileProvider (see AndroidManifest.xml's <provider> entry): covers all of
+     external storage, since HiddenMediaScanner's file:// items can live anywhere under a storage
+     volume's root (see its class doc). Only ever used to rewrite a specific, already-known file://
+     uri into a shareable content:// one - this does not expose arbitrary paths to other apps by
+     itself. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="external_files" path="." />
+</paths>
+

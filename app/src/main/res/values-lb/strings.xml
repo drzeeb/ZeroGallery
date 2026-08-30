@@ -32,6 +32,24 @@
     <string name="video_gestures_help_volume">Op der rietser Hallschent no uewen/ënnen wëschen fir de Volume unzepassen</string>
     <string name="video_gestures_help_dismiss">Verstan</string>
 
+    <string name="share_action">Deelen</string>
+    <string name="delete_action">Läschen</string>
+    <string name="selection_clear_action">Auswiel läschen</string>
+    <string name="delete_confirm_title">Läschen?</string>
+    <string name="delete_confirm_dismiss">Ofbriechen</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d ausgewielt</item>
+        <item quantity="other">%d ausgewielt</item>
+    </plurals>
+    <plurals name="delete_confirm_body">
+        <item quantity="one">Dëst Element gëtt definitiv geläscht.</item>
+        <item quantity="other">Dës %d Elementer ginn definitiv geläscht.</item>
+    </plurals>
+    <plurals name="delete_confirm_action">
+        <item quantity="one">Läschen</item>
+        <item quantity="other">%d läschen</item>
+    </plurals>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d Element</item>
         <item quantity="other">%d Elementer</item>

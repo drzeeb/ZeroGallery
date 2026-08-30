@@ -1,8 +1,11 @@
 package de.zerogallery.ui.gallery
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,10 +19,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -41,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -48,12 +55,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
+import de.zerogallery.data.mediastore.MediaDeleter
+import de.zerogallery.data.mediastore.MediaSharer
+import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.ui.detail.MediaDetailScreen
 import de.zerogallery.ui.permission.AllFilesAccessPermission
 import de.zerogallery.ui.permission.MediaPermissions
@@ -106,6 +117,10 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
     var showAllFilesAccessRationale by rememberSaveable { mutableStateOf(false) }
+    var selectedIds by rememberSaveable(stateSaver = listSaver(save = { it.toList() }, restore = { it.toSet() })) {
+        mutableStateOf(emptySet<Long>())
+    }
+    var pendingDeleteItems by remember { mutableStateOf<List<MediaItem>?>(null) }
     val saveableStateHolder = rememberSaveableStateHolder()
     val context = LocalContext.current
 
@@ -120,6 +135,38 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             showHidden = true
         }
         viewModel.refresh()
+    }
+
+    // Fires after the user confirms/cancels the system delete-confirmation dialog for regular
+    // MediaStore items (API 30+, see MediaDeleter.createDeleteRequest) - any HiddenMediaScanner
+    // file:// items in the same batch were already deleted directly beforehand (see performDelete
+    // below), since there's no equivalent confirmation flow for those regardless of API level.
+    val deleteRequestLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.refresh()
+            selectedIds = emptySet()
+            selectedIndex = null
+        }
+    }
+
+    fun performDelete(items: List<MediaItem>) {
+        val (fileItems, contentItems) = items.partition { it.uri.scheme == "file" }
+        if (fileItems.isNotEmpty()) {
+            MediaDeleter.delete(context, fileItems)
+        }
+        val deleteRequest = MediaDeleter.createDeleteRequest(context, contentItems.map { it.uri })
+        if (deleteRequest != null) {
+            deleteRequestLauncher.launch(IntentSenderRequest.Builder(deleteRequest).build())
+        } else {
+            if (contentItems.isNotEmpty()) {
+                MediaDeleter.delete(context, contentItems)
+            }
+            viewModel.refresh()
+            selectedIds = emptySet()
+            selectedIndex = null
+        }
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
@@ -139,6 +186,18 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
                 }
             },
             onDismiss = { showAllFilesAccessRationale = false },
+        )
+    }
+
+    val itemsPendingDelete = pendingDeleteItems
+    if (itemsPendingDelete != null) {
+        DeleteConfirmationDialog(
+            count = itemsPendingDelete.size,
+            onConfirm = {
+                pendingDeleteItems = null
+                performDelete(itemsPendingDelete)
+            },
+            onDismiss = { pendingDeleteItems = null },
         )
     }
 
@@ -169,13 +228,21 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             else -> groups.flatMap { it.items }
         }
     }
+    val selectedItems = remember(selectedIds, displayedItems) {
+        displayedItems.filter { it.id in selectedIds }
+    }
 
-    // Step back out of an opened folder to the folder picker, rather than falling through to the
-    // system's default back behaviour (closing the app). Only active while the folder picker's
-    // *contents* screen is actually showing - i.e. not while the detail viewer is open on top of
-    // it, which handles back for itself (see MediaDetailScreen's own BackHandler).
-    BackHandler(enabled = selectedIndex == null && selectedFolderLabel != null) {
-        selectedFolderLabel = null
+    // Exits selection mode, then steps back out of an opened folder to the folder picker, rather
+    // than falling through to the system's default back behaviour (closing the app) - only active
+    // while the folder picker's *contents* screen is actually showing, i.e. not while the detail
+    // viewer is open on top of it, which handles back for itself (see MediaDetailScreen's own
+    // BackHandler).
+    BackHandler(enabled = selectedIndex == null && (selectedIds.isNotEmpty() || selectedFolderLabel != null)) {
+        if (selectedIds.isNotEmpty()) {
+            selectedIds = emptySet()
+        } else {
+            selectedFolderLabel = null
+        }
     }
 
     val index = selectedIndex
@@ -184,6 +251,10 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             items = displayedItems,
             initialIndex = index,
             onClose = { selectedIndex = null },
+            onShareItem = { item ->
+                context.startActivity(Intent.createChooser(MediaSharer.shareIntent(context, listOf(item)), null))
+            },
+            onDeleteItem = { item -> pendingDeleteItems = listOf(item) },
         )
     } else {
         GalleryScreen(
@@ -192,6 +263,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             groupingMode = groupingMode,
             selectedFolderLabel = selectedFolderLabel,
             showHidden = showHidden,
+            selectedIds = selectedIds,
             saveableStateHolder = saveableStateHolder,
             onGroupingModeChange = {
                 groupingMode = it
@@ -207,7 +279,22 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             onFolderOpen = { selectedFolderLabel = it },
             onFolderBack = { selectedFolderLabel = null },
             onRequestPermission = { permissionLauncher.launch(MediaPermissions.required) },
-            onItemClick = { selectedIndex = it },
+            onItemClick = { index ->
+                val item = displayedItems.getOrNull(index)
+                if (item != null && selectedIds.isNotEmpty()) {
+                    selectedIds = if (item.id in selectedIds) selectedIds - item.id else selectedIds + item.id
+                } else {
+                    selectedIndex = index
+                }
+            },
+            onItemLongClick = { item ->
+                selectedIds = if (item.id in selectedIds) selectedIds - item.id else selectedIds + item.id
+            },
+            onClearSelection = { selectedIds = emptySet() },
+            onShareSelected = {
+                context.startActivity(Intent.createChooser(MediaSharer.shareIntent(context, selectedItems), null))
+            },
+            onDeleteSelected = { pendingDeleteItems = selectedItems },
         )
     }
 }
@@ -238,6 +325,7 @@ private fun GalleryScreen(
     groupingMode: MediaGroupingMode,
     selectedFolderLabel: String?,
     showHidden: Boolean,
+    selectedIds: Set<Long>,
     saveableStateHolder: SaveableStateHolder,
     onGroupingModeChange: (MediaGroupingMode) -> Unit,
     onShowHiddenChange: (Boolean) -> Unit,
@@ -245,10 +333,15 @@ private fun GalleryScreen(
     onFolderBack: () -> Unit,
     onRequestPermission: () -> Unit,
     onItemClick: (index: Int) -> Unit,
+    onItemLongClick: (MediaItem) -> Unit,
+    onClearSelection: () -> Unit,
+    onShareSelected: () -> Unit,
+    onDeleteSelected: () -> Unit,
 ) {
     val windowWidthSizeClass = rememberWindowWidthSizeClass()
     val isFolderPicker = groupingMode == MediaGroupingMode.FOLDER && selectedFolderLabel == null
     val openedFolder = groupingMode == MediaGroupingMode.FOLDER && selectedFolderLabel != null
+    val isSelectionMode = selectedIds.isNotEmpty()
     var isOverflowMenuExpanded by remember { mutableStateOf(false) }
     var showVideoGesturesHelp by rememberSaveable { mutableStateOf(false) }
 
@@ -260,76 +353,102 @@ private fun GalleryScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    if (openedFolder) {
-                        Text(
+                    when {
+                        isSelectionMode -> Text(
+                            pluralStringResource(R.plurals.selection_count, selectedIds.size, selectedIds.size),
+                        )
+
+                        openedFolder -> Text(
                             text = selectedFolderLabel.orEmpty(),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                    } else {
-                        ZeroGalleryWordmark()
+
+                        else -> ZeroGalleryWordmark()
                     }
                 },
                 navigationIcon = {
-                    if (openedFolder) {
+                    if (isSelectionMode) {
+                        IconButton(onClick = onClearSelection) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.selection_clear_action),
+                            )
+                        }
+                    } else if (openedFolder) {
                         IconButton(onClick = onFolderBack) {
                             Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                         }
                     }
                 },
                 actions = {
-                    if (uiState is GalleryUiState.Content && groupingMode == MediaGroupingMode.FOLDER) {
-                        IconButton(onClick = { onShowHiddenChange(!showHidden) }) {
+                    if (isSelectionMode) {
+                        IconButton(onClick = onShareSelected) {
                             Icon(
-                                imageVector = if (showHidden) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                contentDescription = stringResource(
-                                    if (showHidden) {
-                                        R.string.hidden_folders_hide_action
-                                    } else {
-                                        R.string.hidden_folders_show_action
-                                    },
-                                ),
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.share_action),
                             )
                         }
-                    }
-                    if (uiState is GalleryUiState.Content && !openedFolder) {
-                        IconButton(
-                            onClick = {
-                                val next = MediaGroupingMode.entries[
-                                    (groupingMode.ordinal + 1) % MediaGroupingMode.entries.size
-                                ]
-                                onGroupingModeChange(next)
-                            },
-                        ) {
+                        IconButton(onClick = onDeleteSelected) {
                             Icon(
-                                imageVector = when (groupingMode) {
-                                    MediaGroupingMode.NONE -> Icons.Filled.GridView
-                                    MediaGroupingMode.DATE -> Icons.Filled.CalendarMonth
-                                    MediaGroupingMode.FOLDER -> Icons.Filled.Folder
-                                },
-                                contentDescription = stringResource(R.string.media_grouping_action),
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.delete_action),
                             )
                         }
-                    }
-                    if (uiState is GalleryUiState.Content) {
-                        Box {
-                            IconButton(onClick = { isOverflowMenuExpanded = true }) {
+                    } else {
+                        if (uiState is GalleryUiState.Content && groupingMode == MediaGroupingMode.FOLDER) {
+                            IconButton(onClick = { onShowHiddenChange(!showHidden) }) {
                                 Icon(
-                                    imageVector = Icons.Filled.MoreVert,
-                                    contentDescription = stringResource(R.string.overflow_menu_action),
+                                    imageVector = if (showHidden) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    contentDescription = stringResource(
+                                        if (showHidden) {
+                                            R.string.hidden_folders_hide_action
+                                        } else {
+                                            R.string.hidden_folders_show_action
+                                        },
+                                    ),
                                 )
                             }
-                            DropdownMenu(
-                                expanded = isOverflowMenuExpanded,
-                                onDismissRequest = { isOverflowMenuExpanded = false },
+                        }
+                        if (uiState is GalleryUiState.Content && !openedFolder) {
+                            IconButton(
+                                onClick = {
+                                    val next = MediaGroupingMode.entries[
+                                        (groupingMode.ordinal + 1) % MediaGroupingMode.entries.size
+                                    ]
+                                    onGroupingModeChange(next)
+                                },
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.menu_item_video_gestures)) },
-                                    onClick = {
-                                        isOverflowMenuExpanded = false
-                                        showVideoGesturesHelp = true
+                                Icon(
+                                    imageVector = when (groupingMode) {
+                                        MediaGroupingMode.NONE -> Icons.Filled.GridView
+                                        MediaGroupingMode.DATE -> Icons.Filled.CalendarMonth
+                                        MediaGroupingMode.FOLDER -> Icons.Filled.Folder
                                     },
+                                    contentDescription = stringResource(R.string.media_grouping_action),
                                 )
+                            }
+                        }
+                        if (uiState is GalleryUiState.Content) {
+                            Box {
+                                IconButton(onClick = { isOverflowMenuExpanded = true }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.MoreVert,
+                                        contentDescription = stringResource(R.string.overflow_menu_action),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = isOverflowMenuExpanded,
+                                    onDismissRequest = { isOverflowMenuExpanded = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.menu_item_video_gestures)) },
+                                        onClick = {
+                                            isOverflowMenuExpanded = false
+                                            showVideoGesturesHelp = true
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -375,6 +494,8 @@ private fun GalleryScreen(
                                 groups = displayedGroups,
                                 onItemClick = onItemClick,
                                 windowWidthSizeClass = windowWidthSizeClass,
+                                selectedIds = selectedIds,
+                                onItemLongClick = onItemLongClick,
                             )
                         }
                     }
@@ -448,6 +569,33 @@ private fun AllFilesAccessRationaleDialog(onConfirm: () -> Unit, onDismiss: () -
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.hidden_folders_permission_dismiss))
+            }
+        },
+    )
+}
+
+/**
+ * Confirms a permanent delete before it happens - the only safety net for
+ * [de.zerogallery.data.filesystem.HiddenMediaScanner]'s `file://` items (deleted directly, with no
+ * OS-level confirmation available at all) and for regular `MediaStore` items below API 30 (no
+ * [de.zerogallery.data.mediastore.MediaDeleter.createDeleteRequest] system dialog either). Shown
+ * unconditionally regardless of API level/item source, so the confirmation step is always
+ * consistent no matter what's selected.
+ */
+@Composable
+private fun DeleteConfirmationDialog(count: Int, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.delete_confirm_title)) },
+        text = { Text(pluralStringResource(R.plurals.delete_confirm_body, count, count)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(pluralStringResource(R.plurals.delete_confirm_action, count, count))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.delete_confirm_dismiss))
             }
         },
     )

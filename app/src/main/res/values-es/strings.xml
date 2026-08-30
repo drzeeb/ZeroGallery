@@ -32,6 +32,24 @@
     <string name="video_gestures_help_volume">Desliza hacia arriba/abajo en la mitad derecha para ajustar el volumen</string>
     <string name="video_gestures_help_dismiss">Entendido</string>
 
+    <string name="share_action">Compartir</string>
+    <string name="delete_action">Eliminar</string>
+    <string name="selection_clear_action">Borrar selección</string>
+    <string name="delete_confirm_title">¿Eliminar?</string>
+    <string name="delete_confirm_dismiss">Cancelar</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d seleccionado</item>
+        <item quantity="other">%d seleccionados</item>
+    </plurals>
+    <plurals name="delete_confirm_body">
+        <item quantity="one">Este elemento se eliminará permanentemente.</item>
+        <item quantity="other">Estos %d elementos se eliminarán permanentemente.</item>
+    </plurals>
+    <plurals name="delete_confirm_action">
+        <item quantity="one">Eliminar</item>
+        <item quantity="other">Eliminar %d</item>
+    </plurals>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d elemento</item>
         <item quantity="other">%d elementos</item>
