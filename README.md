@@ -31,7 +31,7 @@ ZeroGallery **deliberately does not** declare `android.permission.INTERNET`. Thi
 
 ## 📦 Installation
 
-The project is currently under active development. Releases will be provided via GitHub Releases and/or F-Droid in due course.
+The project is currently under active development. Releases will be published on the **Google Play Store** in due course.
 
 ```bash
 git clone https://github.com/drzeeb/ZeroGallery.git
