@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZeroGallery — The offline-first gallery for Android</title>
+  <meta name="description" content="ZeroGallery is an extremely lightweight, ad-free, 100% offline gallery app for Android photos and videos. No tracking, no internet permission, open source." />
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖼️</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="./">
+        <span class="logo">🖼️</span>
+        <span>ZeroGallery</span>
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/drzeeb/ZeroGallery">GitHub</a>
+        <a href="privacy.html">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="logo-large">🖼️</span>
+        <h1>The gallery that stays offline.</h1>
+        <p class="tagline">
+          ZeroGallery is an extremely lightweight, ad-free, <strong>100% offline</strong> gallery
+          app for your photos and videos. No tracking. No internet access. No cloud. Just your
+          media, your control.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/drzeeb/ZeroGallery">View on GitHub</a>
+          <a class="btn btn-secondary" href="https://github.com/drzeeb/ZeroGallery/releases">Coming soon to Google Play</a>
+        </div>
+        <div class="badges">
+          <img src="https://github.com/drzeeb/ZeroGallery/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+          <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="Apache 2.0 license" />
+          <img src="https://img.shields.io/badge/API-26%2B-brightgreen.svg" alt="Min SDK 26" />
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <h2>Why ZeroGallery?</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <span class="icon">🔒</span>
+            <h3>No <code>INTERNET</code> permission</h3>
+            <p>Not a setting you can toggle off — the app is architecturally incapable of
+              network access. It never even declares the permission.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">⚡</span>
+            <h3>Fast &amp; native</h3>
+            <p>Reads photos and videos directly from Android's <code>MediaStore</code>, with
+              cached thumbnails for a smooth, responsive grid.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">📱💻</span>
+            <h3>Built for phones &amp; tablets</h3>
+            <p>An adaptive grid and layout that scales column count, thumbnail size and spacing
+              to the available screen width — from phone to tablet.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">▶️</span>
+            <h3>Real video playback</h3>
+            <p>Full-screen viewer with pinch-to-zoom photos and inline video playback powered by
+              Media3/ExoPlayer.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">🚫</span>
+            <h3>No ads, no tracking</h3>
+            <p>No analytics SDKs, no ad networks, no account, no sign-up. Nothing to consent to.</p>
+          </div>
+          <div class="feature-card">
+            <span class="icon">📖</span>
+            <h3>Open source</h3>
+            <p>Licensed under Apache License 2.0. Inspect every line, build it yourself, or
+              contribute on GitHub.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <h2>Build it yourself</h2>
+        <pre><code>git clone https://github.com/drzeeb/ZeroGallery.git
+cd ZeroGallery
+./gradlew assembleDebug</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <a href="https://github.com/drzeeb/ZeroGallery">GitHub</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="https://github.com/drzeeb/ZeroGallery/blob/main/LICENSE">License</a>
+      </div>
+      <div>© 2026 ZeroGallery Contributors</div>
+    </div>
+  </footer>
+</body>
+</html>
+

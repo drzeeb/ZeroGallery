@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — ZeroGallery</title>
+  <meta name="description" content="ZeroGallery's privacy policy: the app collects, stores and transmits absolutely no data. Everything happens locally on your device." />
+  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖼️</text></svg>" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="./">
+        <span class="logo">🖼️</span>
+        <span>ZeroGallery</span>
+      </a>
+      <nav class="site-nav">
+        <a href="https://github.com/drzeeb/ZeroGallery">GitHub</a>
+        <a href="privacy.html">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container policy">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: August 30, 2026</p>
+
+    <div class="summary-box">
+      <p><strong>The short version:</strong> ZeroGallery does not collect, store, transmit,
+        share or sell any data of any kind. It has no analytics, no ads, no account system, no
+        backend server — and no <code>INTERNET</code> permission at all. Everything the app does
+        happens entirely on your device.</p>
+    </div>
+
+    <h2>1. Who we are</h2>
+    <p>
+      ZeroGallery is an open-source, ad-free gallery application for Android, developed and
+      maintained by the ZeroGallery Contributors. The source code is publicly available at
+      <a href="https://github.com/drzeeb/ZeroGallery">github.com/drzeeb/ZeroGallery</a> under the
+      Apache License 2.0, so anyone can verify the claims made in this policy.
+    </p>
+
+    <h2>2. Data collection</h2>
+    <p>
+      ZeroGallery collects <strong>no personal data whatsoever</strong>. Specifically, the app
+      does not:
+    </p>
+    <ul>
+      <li>Create user accounts or require sign-up/sign-in of any kind</li>
+      <li>Include analytics, crash-reporting or advertising SDKs</li>
+      <li>Transmit your photos, videos, filenames, metadata or usage statistics anywhere</li>
+      <li>Use cookies, device identifiers or advertising IDs for tracking</li>
+      <li>Communicate with any server operated by us or any third party</li>
+    </ul>
+    <p>
+      This is not merely a policy promise: ZeroGallery's <code>AndroidManifest.xml</code> never
+      declares the <code>android.permission.INTERNET</code> permission. Android enforces this at
+      the operating-system level, so the app is technically incapable of making any network
+      connection, regardless of what the code does or how it is updated in the future.
+    </p>
+
+    <h2>3. Permissions used and why</h2>
+    <table class="permissions">
+      <thead>
+        <tr>
+          <th>Permission</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>READ_MEDIA_IMAGES</code><br /><code>READ_MEDIA_VIDEO</code><br /><span style="color:var(--text-muted)">(Android 13+)</span></td>
+          <td>Lets the app read the photos and videos already stored on your device via
+            Android's <code>MediaStore</code>, so it can display them in the gallery grid.</td>
+        </tr>
+        <tr>
+          <td><code>READ_EXTERNAL_STORAGE</code><br /><span style="color:var(--text-muted)">(Android 12L and below)</span></td>
+          <td>The legacy equivalent of the permissions above, used only on older Android
+            versions that don't yet support the granular media permissions.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      All media is read directly from your device's local storage and rendered on-screen. Nothing
+      is copied off the device, uploaded, cached remotely, or shared with any other app beyond
+      what Android's standard sharing UI (if and when you explicitly choose to share a file) does.
+    </p>
+
+    <h2>4. Data storage</h2>
+    <p>
+      ZeroGallery does not maintain its own database of your media, cloud backups, or remote
+      caches. Any thumbnails generated for the gallery grid are cached locally on your device
+      only, purely for performance, and are removed when the app's cache is cleared or the app is
+      uninstalled.
+    </p>
+
+    <h2>5. Third-party services</h2>
+    <p>
+      ZeroGallery does not integrate with any third-party analytics, advertising, or cloud
+      storage services. The open-source libraries it depends on (Jetpack Compose, Coil, Media3/
+      ExoPlayer) run entirely on-device and are listed, with their licenses, in the project's
+      <a href="https://github.com/drzeeb/ZeroGallery/blob/main/NOTICE">NOTICE</a> file.
+    </p>
+
+    <h2>6. Children's privacy</h2>
+    <p>
+      Since ZeroGallery does not collect any data from any user, it does not knowingly or
+      unknowingly collect personal information from children either.
+    </p>
+
+    <h2>7. Changes to this policy</h2>
+    <p>
+      If this policy ever changes, the update will be published on this page along with a
+      revised "Last updated" date, and reflected in the project's
+      <a href="https://github.com/drzeeb/ZeroGallery/blob/main/CHANGELOG.md">CHANGELOG</a>. Given
+      the app's architecture, any future change that would require collecting data would be a
+      major, clearly communicated change — not a silent update.
+    </p>
+
+    <h2>8. Contact</h2>
+    <p>
+      Questions about this policy or the app's behavior can be raised as a
+      <a href="https://github.com/drzeeb/ZeroGallery/issues">GitHub issue</a>. Since the full
+      source code is public, you're also welcome to verify any of the claims above yourself.
+    </p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <a href="https://github.com/drzeeb/ZeroGallery">GitHub</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="https://github.com/drzeeb/ZeroGallery/blob/main/LICENSE">License</a>
+      </div>
+      <div>© 2026 ZeroGallery Contributors</div>
+    </div>
+  </footer>
+</body>
+</html>
+

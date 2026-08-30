@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- GitHub Pages site (`docs/`): landing page (`index.html`) and a Play Store-ready privacy policy (`privacy.html`) explaining that ZeroGallery collects, stores and transmits no data whatsoever
 - `WindowWidthSizeClass` (Compact/Medium/Expanded, Material 3 breakpoints at 600dp/840dp), unit-tested via `windowWidthSizeClassOf()`
 - `MediaGrid` now scales minimum thumbnail size and grid spacing up on Medium/Expanded windows (tablets) instead of using fixed phone-sized values
 - Permission rationale and empty-gallery messages are now width-constrained (max 480dp) so their text stays readable instead of stretching edge to edge on tablets

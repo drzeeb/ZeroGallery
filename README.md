@@ -8,6 +8,8 @@
 
 No tracking. No internet access. No cloud. Just your media, your control.
 
+🌐 [Website](https://drzeeb.github.io/ZeroGallery/) · 🔒 [Privacy Policy](https://drzeeb.github.io/ZeroGallery/privacy.html)
+
 ## ✨ Features
 
 - 📷 **Fast, native scanning** of photos & videos via `MediaStore`
