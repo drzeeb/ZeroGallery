@@ -42,10 +42,12 @@ cd ZeroGallery
 ## 🗺️ Roadmap
 
 - [x] Project setup, license, CI
-- [ ] MediaStore data layer & permission handling
+- [x] MediaStore data layer & permission handling
 - [ ] Basic grid (phone)
 - [ ] Adaptive layout (tablet support)
 - [ ] Detail viewer & video player
+
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
 
 ## 🤝 Contributing
 
