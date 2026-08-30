@@ -1,0 +1,102 @@
+name: Release
+
+# Manually triggered only - a release is a deliberate, human decision (which version number to
+# use, when to cut it), never something that should happen automatically off a push/schedule like
+# ci.yml does. Builds/tags/releases app/build.gradle.kts's versionName/versionCode as given here,
+# signs the app bundle + APK if release signing secrets are configured (see build.gradle.kts's
+# releaseSigningConfigured comment for why those are never committed to the repo), and publishes
+# both as a GitHub Release - Play Store upload itself is a separate, manual step (drag-and-drop the
+# downloaded .aab into the Play Console) rather than being automated here, since that additionally
+# needs a Play Console service account with its own credentials to set up.
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version name shown to users, e.g. 1.2.0 (must match app/build.gradle.kts's versionName format)"
+        required: true
+        type: string
+      version_code:
+        description: "Version code (internal, ever-increasing build number). Leave empty to auto-increment the current one by 1."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Determine version code
+        id: version
+        run: |
+          if [ -n "${{ inputs.version_code }}" ]; then
+            NEW_CODE="${{ inputs.version_code }}"
+          else
+            CURRENT_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' app/build.gradle.kts)
+            NEW_CODE=$((CURRENT_CODE + 1))
+          fi
+          echo "code=$NEW_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Bump versionName/versionCode in app/build.gradle.kts
+        run: |
+          sed -i "s/versionCode = [0-9]\+/versionCode = ${{ steps.version.outputs.code }}/" app/build.gradle.kts
+          sed -i "s/versionName = \"[^\"]*\"/versionName = \"${{ inputs.version_name }}\"/" app/build.gradle.kts
+
+      - name: Decode release keystore
+        if: ${{ vars.RELEASE_SIGNING_ENABLED == 'true' }}
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "RELEASE_KEYSTORE_PASSWORD=${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Build release bundle & APK
+        run: ./gradlew bundleRelease assembleRelease
+
+      - name: Remove decoded keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle.kts
+          git commit -m "chore: release v${{ inputs.version_name }} (${{ steps.version.outputs.code }})"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Tag release
+        run: |
+          git tag "v${{ inputs.version_name }}"
+          git push origin "v${{ inputs.version_name }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ inputs.version_name }}"
+          name: "v${{ inputs.version_name }}"
+          generate_release_notes: true
+          files: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
+

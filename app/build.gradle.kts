@@ -4,6 +4,18 @@ plugins {
     jacoco
 }
 
+// Release signing: intentionally never committed to the repo, not even encrypted - a leaked
+// keystore/passwords would let anyone impersonate ZeroGallery's Play Store listing with a
+// malicious update, and Git history is effectively forever even after a later "fix". Instead,
+// release.yml (the manual release workflow) decodes a base64 keystore from a GitHub Actions
+// secret to a temp file on the runner and passes these same four values in as env vars for that
+// one job only; they're simply unset for every regular/local build (including PR checks), which
+// is exactly why buildTypes.release below only wires up a signingConfig conditionally - assembling
+// a debuggable, unsigned release build type locally (e.g. to sanity-check `optimization.enable =
+// false`'s output) still needs to work for every contributor who doesn't have these secrets.
+val releaseKeystorePath: String? = System.getenv("RELEASE_KEYSTORE_PATH")
+val releaseSigningConfigured = !releaseKeystorePath.isNullOrBlank()
+
 android {
     namespace = "de.zerogallery"
     compileSdk {
@@ -20,10 +32,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
+            }
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

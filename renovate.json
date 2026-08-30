@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    "schedule:weekly"
+  ],
+  "timezone": "Europe/Berlin",
+  "labels": ["dependencies"],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Group all AndroidX libraries into a single PR - they're versioned/released together upstream anyway, so reviewing (and testing) them one at a time would just be needless churn.",
+      "matchPackageNames": ["/^androidx\\./"],
+      "groupName": "AndroidX"
+    },
+    {
+      "description": "Group the Kotlin Gradle plugin with the Kotlin stdlib/compose-compiler - they're required to always match exactly, so bumping one without the other would just break the build.",
+      "matchPackageNames": ["/^org\\.jetbrains\\.kotlin/"],
+      "groupName": "Kotlin"
+    },
+    {
+      "description": "Group everything under app/build.gradle.kts's own Gradle plugins (AGP, etc.) separately from regular library dependencies above.",
+      "matchManagers": ["gradle"],
+      "matchDepTypes": ["plugin"],
+      "groupName": "Gradle plugins"
+    },
+    {
+      "description": "GitHub Actions used by the CI/release workflows themselves.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Major version bumps need a human to actually read the changelog for breaking changes (e.g. a new AGP/Kotlin major version) - never auto-merged, unlike minor/patch housekeeping could be configured to be later.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}
+
