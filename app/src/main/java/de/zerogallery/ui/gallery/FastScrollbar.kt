@@ -43,6 +43,11 @@ import kotlin.time.Duration.Companion.milliseconds
 private val ThumbWidth = 32.dp
 private val ThumbHeight = 56.dp
 private val ThumbTouchWidth = 48.dp
+
+/** Extra vertical margin around the thumb's own bounds that still counts as "touched it" - purely
+ * to make it a bit more forgiving to grab than requiring pixel-perfect precision, not to widen it
+ * into the sidebar-hijacking touch target this replaced (see [FastScrollbar]'s class doc). */
+private val ThumbTouchSlop = 12.dp
 private val ThumbShape = RoundedCornerShape(
     topStart = 16.dp,
     bottomStart = 16.dp,
@@ -65,11 +70,14 @@ private val HideDelay = 1_000.milliseconds
  * as Photos/most other fast-scrollers. Hidden entirely whenever [gridState] has too few items to
  * actually need one.
  *
- * The right-edge touch target itself, however, always stays "live" (just invisible while faded
- * out - [Modifier.alpha] only affects drawing, not touch handling) rather than only mounting once
- * [gridState] happens to already be mid-scroll: otherwise there'd be no way to ever *start* a drag
- * from rest, since the thumb visually appearing was itself gated on a scroll already being in
- * progress - a chicken-and-egg that made the thumb effectively ungrabbable.
+ * The right-edge touch target itself always mounts (just invisible while faded out -
+ * [Modifier.alpha] only affects drawing, not touch handling) so a drag can still be *continued*
+ * smoothly even if the thumb happens to fade out mid-gesture, but a new gesture is only ever
+ * allowed to actually *start* one if the initial touch-down lands within (a slightly touch-
+ * friendlier margin around) the thumb's current position - never anywhere else along the full
+ * column height. Otherwise, that column - 48dp wide but as tall as the entire grid - would
+ * silently hijack completely unrelated touches/scrolls/taps starting anywhere near the right edge
+ * of the screen, even while the thumb itself isn't visible at all.
  *
  * Dragging is handled with a hand-rolled gesture loop (rather than the usual
  * [androidx.compose.foundation.gestures.detectVerticalDragGestures]) that explicitly consumes
@@ -80,7 +88,10 @@ private val HideDelay = 1_000.milliseconds
  * dragged - a belt-and-suspenders guarantee that the grid can never also react to the same touch
  * sequence as a normal scroll/fling regardless of any pointer-input pass/priority subtlety, since
  * being drawn visually on top of the grid alone doesn't decide which of two simultaneously-
- * registered drag detectors wins a competing *drag* gesture (unlike a plain tap).
+ * registered drag detectors wins a competing *drag* gesture (unlike a plain tap). A touch-down
+ * that misses the thumb, however, is deliberately *not* consumed at all here, so it falls through
+ * to the grid completely untouched, exactly as if this overlay didn't exist.
+
  *
  * While dragging, [LazyGridState.scrollToItem] is only actually invoked when the drag has moved
  * far enough to land on a *different* target item than last time, rather than on every single
@@ -108,6 +119,7 @@ internal fun FastScrollbar(
     var isDragging by remember { mutableStateOf(false) }
     var dragThumbTopPx by remember { mutableFloatStateOf(0f) }
     val thumbHeightPx = with(density) { ThumbHeight.toPx() }
+    val thumbTouchSlopPx = with(density) { ThumbTouchSlop.toPx() }
 
     val isScrollable by remember {
         derivedStateOf {
@@ -140,6 +152,7 @@ internal fun FastScrollbar(
                 var lastTargetIndex = -1
 
                 fun currentTravel() = (trackHeightPx - thumbHeightPx).coerceAtLeast(0f)
+                fun currentThumbTopPx() = restingProgress * currentTravel()
                 fun moveTo(y: Float) {
                     val travelNow = currentTravel()
                     dragThumbTopPx = (y - thumbHeightPx / 2).coerceIn(0f, travelNow)
@@ -156,6 +169,19 @@ internal fun FastScrollbar(
 
                 awaitEachGesture {
                     val down = awaitFirstDown(pass = PointerEventPass.Initial)
+
+                    // Ignore (and importantly, don't consume) any touch-down that doesn't
+                    // actually land on the thumb itself - see the class doc for why the touch
+                    // target otherwise spanning the whole track height must never react to
+                    // touches outside the thumb's own (slightly padded) bounds.
+                    val thumbTop = currentThumbTopPx()
+                    val thumbBottom = thumbTop + thumbHeightPx
+                    if (down.position.y < thumbTop - thumbTouchSlopPx ||
+                        down.position.y > thumbBottom + thumbTouchSlopPx
+                    ) {
+                        return@awaitEachGesture
+                    }
+
                     down.consume()
                     isDragging = true
                     onDraggingChange(true)
@@ -172,6 +198,7 @@ internal fun FastScrollbar(
                     onDraggingChange(false)
                 }
             },
+
     ) {
         Box(
             contentAlignment = Alignment.Center,
