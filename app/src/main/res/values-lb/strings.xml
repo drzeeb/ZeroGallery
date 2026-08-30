@@ -16,6 +16,9 @@
     <string name="media_grouping_action">Gruppéierung änneren</string>
     <string name="media_grouping_unknown_folder">Aner</string>
 
+    <string name="hidden_folders_show_action">Verstoppte Dossieren weisen</string>
+    <string name="hidden_folders_hide_action">Verstoppte Dossieren verstoppen</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d Element</item>
         <item quantity="other">%d Elementer</item>

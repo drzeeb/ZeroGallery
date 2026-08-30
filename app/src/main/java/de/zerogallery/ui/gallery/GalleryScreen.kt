@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -79,6 +81,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     var selectedIndex by rememberSaveable { mutableStateOf<Int?>(null) }
     var groupingMode by rememberSaveable { mutableStateOf(MediaGroupingMode.NONE) }
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
+    var showHidden by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -91,9 +94,18 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
 
     val contentState = uiState
     val unknownFolderLabel = stringResource(R.string.media_grouping_unknown_folder)
-    val groups = remember(contentState, groupingMode, unknownFolderLabel) {
+    val groups = remember(contentState, groupingMode, unknownFolderLabel, showHidden) {
         if (contentState is GalleryUiState.Content) {
-            groupMedia(contentState.items, groupingMode, unknownFolderLabel)
+            // The "show hidden" toggle only makes sense for MediaGroupingMode.FOLDER: hidden
+            // items are keyed off their *folder* (see MediaGrouping.isHidden), so folding them
+            // into a flat NONE/DATE grid would just silently drop items with no way to tell why -
+            // whereas here they cleanly disappear as whole folder tiles/sections.
+            val items = if (groupingMode == MediaGroupingMode.FOLDER) {
+                filterHidden(contentState.items, showHidden)
+            } else {
+                contentState.items
+            }
+            groupMedia(items, groupingMode, unknownFolderLabel)
         } else {
             emptyList()
         }
@@ -130,10 +142,12 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             groups = groups,
             groupingMode = groupingMode,
             selectedFolderLabel = selectedFolderLabel,
+            showHidden = showHidden,
             onGroupingModeChange = {
                 groupingMode = it
                 selectedFolderLabel = null
             },
+            onShowHiddenChange = { showHidden = it },
             onFolderOpen = { selectedFolderLabel = it },
             onFolderBack = { selectedFolderLabel = null },
             onRequestPermission = { permissionLauncher.launch(MediaPermissions.required) },
@@ -165,7 +179,9 @@ private fun GalleryScreen(
     groups: List<MediaGroup>,
     groupingMode: MediaGroupingMode,
     selectedFolderLabel: String?,
+    showHidden: Boolean,
     onGroupingModeChange: (MediaGroupingMode) -> Unit,
+    onShowHiddenChange: (Boolean) -> Unit,
     onFolderOpen: (String) -> Unit,
     onFolderBack: () -> Unit,
     onRequestPermission: () -> Unit,
@@ -194,6 +210,20 @@ private fun GalleryScreen(
                     }
                 },
                 actions = {
+                    if (uiState is GalleryUiState.Content && groupingMode == MediaGroupingMode.FOLDER) {
+                        IconButton(onClick = { onShowHiddenChange(!showHidden) }) {
+                            Icon(
+                                imageVector = if (showHidden) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = stringResource(
+                                    if (showHidden) {
+                                        R.string.hidden_folders_hide_action
+                                    } else {
+                                        R.string.hidden_folders_show_action
+                                    },
+                                ),
+                            )
+                        }
+                    }
                     if (uiState is GalleryUiState.Content && !openedFolder) {
                         IconButton(
                             onClick = {

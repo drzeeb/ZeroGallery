@@ -15,6 +15,9 @@
     <string name="media_grouping_action">Changer le regroupement</string>
     <string name="media_grouping_unknown_folder">Autres</string>
 
+    <string name="hidden_folders_show_action">Afficher les dossiers masqués</string>
+    <string name="hidden_folders_hide_action">Masquer les dossiers masqués</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d élément</item>
         <item quantity="other">%d éléments</item>

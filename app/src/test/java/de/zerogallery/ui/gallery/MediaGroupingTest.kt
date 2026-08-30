@@ -21,10 +21,11 @@ class MediaGroupingTest {
         id: Long,
         dateAddedSeconds: Long,
         bucketName: String = "",
+        displayName: String = "item-$id",
     ) = MediaItem(
         id = id,
         uri = fakeUri,
-        displayName = "item-$id",
+        displayName = displayName,
         mediaType = MediaType.IMAGE,
         dateAddedSeconds = dateAddedSeconds,
         sizeBytes = 0,
@@ -93,6 +94,25 @@ class MediaGroupingTest {
         val epochSeconds = epochSecondsFor(2026, 8, 15)
 
         assertEquals("August 2026", monthYearLabel(epochSeconds, Locale.US))
+    }
+
+    @Test
+    fun `filterHidden excludes items in dot-prefixed folders by default`() {
+        val visible = item(1, 100, bucketName = "Camera")
+        val hidden = item(2, 100, bucketName = ".hidden_gallery")
+        val items = listOf(visible, hidden)
+
+        assertEquals(listOf(visible), filterHidden(items, showHidden = false))
+        assertEquals(items, filterHidden(items, showHidden = true))
+    }
+
+    @Test
+    fun `filterHidden also excludes individually dot-prefixed file names`() {
+        val visible = item(1, 100, bucketName = "Camera", displayName = "IMG_1.jpg")
+        val hidden = item(2, 100, bucketName = "Camera", displayName = ".IMG_2.jpg")
+        val items = listOf(visible, hidden)
+
+        assertEquals(listOf(visible), filterHidden(items, showHidden = false))
     }
 }
 

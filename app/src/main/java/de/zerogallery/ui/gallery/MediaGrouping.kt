@@ -68,4 +68,22 @@ internal fun monthYearLabel(epochSeconds: Long, locale: Locale = Locale.getDefau
     return "$month ${date.year}"
 }
 
+/**
+ * Whether [MediaItem.bucketName] follows the common Unix convention for a hidden folder/file (a
+ * leading dot, e.g. ".hidden_gallery" - used by several messaging/vault apps to keep their media
+ * out of standard gallery apps' folder listings). [MediaItem.displayName] is checked too, in case
+ * an otherwise-ordinary folder contains an individually dot-prefixed file.
+ */
+internal fun MediaItem.isHidden(): Boolean =
+    bucketName.startsWith(".") || displayName.startsWith(".")
+
+/**
+ * Filters out items in hidden folders/files (see [isHidden]) unless [showHidden] is `true` - used
+ * to drive the folder view's "show hidden folders" toggle. A plain, unit-testable function kept
+ * separate from [groupMedia] since it's an orthogonal concern (which items are eligible at all,
+ * vs. how the eligible ones get grouped).
+ */
+fun filterHidden(items: List<MediaItem>, showHidden: Boolean): List<MediaItem> =
+    if (showHidden) items else items.filterNot { it.isHidden() }
+
 
