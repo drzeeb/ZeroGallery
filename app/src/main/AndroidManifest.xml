@@ -47,8 +47,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ZeroGallery">
+        <!-- configChanges: without this, rotating the device destroys and recreates the whole
+             Activity (and with it the entire Compose composition), which used to restart any
+             playing video from the beginning - its ExoPlayer instance lived in a plain
+             `remember` inside VideoPlayer, not anything that survives recreation. Handling these
+             configuration changes ourselves instead keeps the Activity (and every in-memory
+             composable/player) alive across rotation; Compose already reacts to the new
+             Configuration reactively via LocalConfiguration.current (see
+             rememberWindowWidthSizeClass), so adaptive/tablet layouts keep working correctly. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:exported="true"
             android:theme="@style/Theme.ZeroGallery"
             android:windowSoftInputMode="adjustResize">
