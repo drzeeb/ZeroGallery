@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- Detail viewer: swiping to the next/previous item stopped working entirely after the first swipe while a video page was involved. `PlayerView`'s built-in controller (`useController = true`) is a native Android `View` with its own touch handling (seek bar, tap-to-show/hide controls) that was permanently stealing touch input from the enclosing Compose `HorizontalPager`. Disabled the native controller and replaced it with a simple Compose `clickable` tap-to-play/pause overlay, which only consumes taps and lets horizontal drags pass through to the pager
 - Video thumbnail badge: the play icon used `Modifier.aspectRatio(1f)` with no bounded size, so inside its `Row` it inflated to fill the loose constraints passed down from the grid tile, making the badge's rounded background grow inconsistently and reveal an uneven strip of the thumbnail behind it. Replaced with a fixed `Modifier.size(12.dp)` so the badge always hugs its content tightly
 
 ### Added
