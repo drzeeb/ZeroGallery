@@ -57,6 +57,7 @@ import de.zerogallery.R
 import de.zerogallery.ui.detail.MediaDetailScreen
 import de.zerogallery.ui.permission.AllFilesAccessPermission
 import de.zerogallery.ui.permission.MediaPermissions
+import de.zerogallery.ui.theme.ZeroGalleryWordmark
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 
 /**
@@ -259,12 +260,15 @@ private fun GalleryScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = selectedFolderLabel?.takeIf { openedFolder }
-                            ?: stringResource(R.string.app_name),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (openedFolder) {
+                        Text(
+                            text = selectedFolderLabel.orEmpty(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    } else {
+                        ZeroGalleryWordmark()
+                    }
                 },
                 navigationIcon = {
                     if (openedFolder) {

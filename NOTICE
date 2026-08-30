@@ -6,6 +6,9 @@ This product includes software developed by third parties, licensed as follows:
 - AndroidX / Jetpack Compose (Apache License 2.0) – https://developer.android.com/jetpack/androidx
 - Media3 / ExoPlayer (Apache License 2.0) – https://github.com/androidx/media
 - Coil (Apache License 2.0) – https://github.com/coil-kt/coil
+- Space Grotesk font, used for the app's wordmark (SIL Open Font License 1.1) –
+  https://github.com/floriankarsten/space-grotesk (full license text bundled at
+  app/src/main/assets/licenses/space_grotesk_OFL.txt)
 
 This project does not bundle or link against any GPL/LGPL-licensed components
 (e.g. LibVLC). Should such a dependency be added in the future, this NOTICE
