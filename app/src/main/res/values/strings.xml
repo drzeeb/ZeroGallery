@@ -7,5 +7,10 @@
 
     <string name="empty_gallery_title">No photos or videos yet</string>
     <string name="empty_gallery_body">Media you capture or save on this device will show up here.</string>
+
+    <string name="video_resize_mode_action">Change video aspect ratio</string>
+    <string name="video_resize_mode_fit">Fit</string>
+    <string name="video_resize_mode_crop">Fill (crop)</string>
+    <string name="video_resize_mode_stretch">Stretch</string>
 </resources>
 

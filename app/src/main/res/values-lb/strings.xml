@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ZeroGallery</string>
+
+    <string name="permission_rationale_title">Zougang zu Fotoen &amp; Videoen</string>
+    <string name="permission_rationale_body">ZeroGallery brauch Zougang zu dengen Fotoen a Videoen fir se unzeweisen. Näischt verléisst jeemools dëst Gerät.</string>
+    <string name="grant_access_action">Zougang erlaben</string>
+
+    <string name="empty_gallery_title">Nach keng Fotoen oder Videoen</string>
+    <string name="empty_gallery_body">Medien, déi s du op dësem Gerät ophëls oder späichers, ginn hei ugewisen.</string>
+
+    <string name="video_resize_mode_action">Säitenverhältnis vum Video änneren</string>
+    <string name="video_resize_mode_fit">Upassen</string>
+    <string name="video_resize_mode_crop">Fëllen (zouschneiden)</string>
+    <string name="video_resize_mode_stretch">Strecken</string>
+</resources>

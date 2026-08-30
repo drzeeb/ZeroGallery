@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">ZeroGallery</string>
+
+    <string name="permission_rationale_title">Toegang tot foto\'s &amp; video\'s</string>
+    <string name="permission_rationale_body">ZeroGallery heeft toegang tot je foto\'s en video\'s nodig om ze weer te geven. Niets verlaat ooit dit toestel.</string>
+    <string name="grant_access_action">Toegang verlenen</string>
+
+    <string name="empty_gallery_title">Nog geen foto\'s of video\'s</string>
+    <string name="empty_gallery_body">Media die je op dit toestel vastlegt of opslaat, verschijnen hier.</string>
+
+    <string name="video_resize_mode_action">Beeldverhouding video wijzigen</string>
+    <string name="video_resize_mode_fit">Passend</string>
+    <string name="video_resize_mode_crop">Vullen (bijsnijden)</string>
+    <string name="video_resize_mode_stretch">Uitrekken</string>
+</resources>
+
