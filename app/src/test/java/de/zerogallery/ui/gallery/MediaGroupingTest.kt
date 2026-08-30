@@ -114,6 +114,62 @@ class MediaGroupingTest {
 
         assertEquals(listOf(visible), filterHidden(items, showHidden = false))
     }
+
+    @Test
+    fun `groupBoundaries accounts for each group's own header row`() {
+        val groups = listOf(
+            MediaGroup(label = "August 2026", items = listOf(item(1, 300), item(2, 200))),
+            MediaGroup(label = "July 2026", items = listOf(item(3, 100))),
+        )
+
+        val boundaries = groupBoundaries(groups)
+
+        // First group's header is grid item 0, its 2 items are 1-2; second group's header is
+        // therefore grid item 3 (1 header + 2 items in), not 2 (which would ignore its own header).
+        assertEquals(listOf(0 to "August 2026", 3 to "July 2026"), boundaries)
+    }
+
+    @Test
+    fun `groupBoundaries omits a header slot entirely for blank labels`() {
+        val groups = listOf(MediaGroup(label = "", items = listOf(item(1, 100), item(2, 100))))
+
+        val boundaries = groupBoundaries(groups)
+
+        assertEquals(listOf(0 to ""), boundaries)
+    }
+
+    @Test
+    fun `currentGroupLabel returns the label of the last boundary at or before the given index`() {
+        val boundaries = listOf(0 to "August 2026", 3 to "July 2026", 5 to "June 2026")
+
+        assertEquals("August 2026", currentGroupLabel(boundaries, gridItemIndex = 0))
+        assertEquals("August 2026", currentGroupLabel(boundaries, gridItemIndex = 2))
+        assertEquals("July 2026", currentGroupLabel(boundaries, gridItemIndex = 3))
+        assertEquals("June 2026", currentGroupLabel(boundaries, gridItemIndex = 99))
+    }
+
+    @Test
+    fun `currentGroupLabel returns blank when there are no boundaries at all`() {
+        assertEquals("", currentGroupLabel(emptyList(), gridItemIndex = 0))
+    }
+
+    @Test
+    fun `computeStickyHeaderOffset stays in place when there is nothing to push against`() {
+        assertEquals(0f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = null))
+        assertEquals(0f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 150f))
+    }
+
+    @Test
+    fun `computeStickyHeaderOffset pushes up by exactly the overlap as the next header approaches`() {
+        assertEquals(-40f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 60f))
+        assertEquals(-90f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 10f))
+    }
+
+    @Test
+    fun `computeStickyHeaderOffset never pushes further than fully off-screen`() {
+        assertEquals(-100f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = 0f))
+        assertEquals(-100f, computeStickyHeaderOffset(headerHeightPx = 100f, nextHeaderTopPx = -20f))
+    }
 }
 
 

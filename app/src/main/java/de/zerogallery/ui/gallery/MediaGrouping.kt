@@ -86,4 +86,52 @@ internal fun MediaItem.isHidden(): Boolean =
 fun filterHidden(items: List<MediaItem>, showHidden: Boolean): List<MediaItem> =
     if (showHidden) items else items.filterNot { it.isHidden() }
 
+/**
+ * Maps each of [groups] to the index its section starts at within [MediaGrid]'s flattened
+ * `LazyVerticalGrid` item list - i.e. counting the (optional) header row itself as well as every
+ * preceding group's items, not just [MediaGroup.items]' own flat index. Used by [currentGroupLabel]
+ * to look up which section a given scroll position currently falls within, driving the live
+ * "August 2026"-style indicator [MediaGrid] shows while the fast scroll thumb is being dragged.
+ */
+internal fun groupBoundaries(groups: List<MediaGroup>): List<Pair<Int, String>> {
+    var gridItemIndex = 0
+    return groups.map { group ->
+        val boundary = gridItemIndex to group.label
+        if (group.label.isNotBlank()) gridItemIndex += 1
+        gridItemIndex += group.items.size
+        boundary
+    }
+}
+
+/**
+ * Which group's label [gridItemIndex] (a `LazyVerticalGrid` item index, as produced by
+ * [groupBoundaries] - header rows included) currently falls within - blank if [boundaries] is
+ * empty or [gridItemIndex] precedes every boundary.
+ */
+internal fun currentGroupLabel(boundaries: List<Pair<Int, String>>, gridItemIndex: Int): String =
+    boundaries.lastOrNull { it.first <= gridItemIndex }?.second ?: ""
+
+/**
+ * How far to vertically translate [MediaGrid]'s pinned sticky section header, in px - the
+ * "push-off" effect seen in Photos and most other grouped lists, where the sticky header slides
+ * up and out of the way exactly as far as the *next* section's real header row has scrolled up
+ * to meet it, so the hand-off between the two looks seamless instead of one abruptly popping in
+ * front of/behind the other.
+ *
+ * [nextHeaderTopPx] is the upcoming real header row's current top offset within the viewport (see
+ * `androidx.compose.foundation.lazy.grid.LazyGridItemInfo`'s `offset.y`), or `null` if no such row
+ * is anywhere near the viewport yet. While it's still farther away than [headerHeightPx], there's
+ * nothing to push against yet, so the sticky header stays fully in place (`0f`). As it closes in,
+ * the sticky header is translated upward by exactly the overlap between the two, reaching
+ * `-headerHeightPx` (fully pushed off) right as the real header arrives at the very top of the
+ * viewport, at which point [MediaGrid] swaps the pinned label over to that new section instead.
+ */
+internal fun computeStickyHeaderOffset(headerHeightPx: Float, nextHeaderTopPx: Float?): Float {
+    if (nextHeaderTopPx == null) return 0f
+    val overlap = headerHeightPx - nextHeaderTopPx
+    return if (overlap > 0f) -overlap.coerceAtMost(headerHeightPx) else 0f
+}
+
+
+
 

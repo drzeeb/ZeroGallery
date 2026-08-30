@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -30,7 +31,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,8 +43,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -50,6 +55,9 @@ import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
 import de.zerogallery.ui.util.WindowWidthSizeClass
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
+import kotlin.math.roundToInt
+
+
 
 /** Minimum tile size and inter-tile spacing for both [MediaGrid] and [FolderGrid]. */
 internal fun gridMinThumbnailSize(windowWidthSizeClass: WindowWidthSizeClass) =
@@ -90,6 +98,16 @@ internal fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
  * A [FastScrollbar] thumb is overlaid on the right edge, letting a large grid be dragged through
  * quickly instead of only flinging one screen at a time - see its class doc for details.
  *
+ * The currently active section's own header (same [MediaGroupHeader], blank labels never render
+ * one at all - see above) is additionally *pinned* to the very top of the grid at all times, both
+ * during normal scrolling and while fast-scrolling - e.g. "August 2026" stays put while scrolling
+ * through that month's tiles, however far below the header itself has actually scrolled, so it's
+ * still always clear which section is on screen right now (including where a fast-scroll drag has
+ * currently landed, without needing a separate indicator just for that). As the *next* section's
+ * real header row scrolls up to meet it, the pinned header is pushed up and out of the way by
+ * exactly that much (see [computeStickyHeaderOffset]) rather than one abruptly popping in front of
+ * the other, then swaps over to that next section once its header reaches the top for real.
+ *
  * Long-pressing a tile invokes [onItemLongClick] with that item - used to enter/extend a
  * multi-select mode (see [de.zerogallery.ui.gallery.GalleryRoute]). While [selectedIds] is
  * non-empty, tapping a tile is expected to toggle its selection instead of opening the detail
@@ -108,6 +126,35 @@ fun MediaGrid(
     val spacing = gridSpacing(windowWidthSizeClass)
     val gridState = rememberLazyGridState()
     var isDraggingThumb by remember { mutableStateOf(false) }
+    var stickyHeaderHeightPx by remember { mutableFloatStateOf(0f) }
+    val boundaries = remember(groups) { groupBoundaries(groups) }
+    val currentLabel by remember(boundaries) {
+        derivedStateOf {
+            val firstVisibleIndex = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.index ?: 0
+            currentGroupLabel(boundaries, firstVisibleIndex)
+        }
+    }
+    val stickyHeaderOffsetPx by remember(stickyHeaderHeightPx) {
+        derivedStateOf {
+            val visibleItems = gridState.layoutInfo.visibleItemsInfo
+            // While the *real* header row for the current section is itself still fully in view
+            // (at or below the very top, e.g. the still-unscrolled initial state), it already does
+            // the job on its own - null suppresses the pinned copy entirely so the two don't
+            // render right on top of/next to each other.
+            val currentHeaderOffsetY = visibleItems
+                .firstOrNull { (it.key as? String) == "header-$currentLabel" }
+                ?.offset?.y
+            if (currentHeaderOffsetY != null && currentHeaderOffsetY >= 0) {
+                null
+            } else {
+                val nextHeaderTopPx = visibleItems
+                    .asSequence()
+                    .filter { (it.key as? String)?.startsWith("header-") == true && it.offset.y > 0 }
+                    .minOfOrNull { it.offset.y.toFloat() }
+                computeStickyHeaderOffset(stickyHeaderHeightPx, nextHeaderTopPx)
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
@@ -139,6 +186,17 @@ fun MediaGrid(
                 }
                 flatIndex += group.items.size
             }
+        }
+
+        val stickyOffset = stickyHeaderOffsetPx
+        if (currentLabel.isNotBlank() && stickyOffset != null) {
+            MediaGroupHeader(
+                label = currentLabel,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .onSizeChanged { stickyHeaderHeightPx = it.height.toFloat() }
+                    .offset { IntOffset(0, stickyOffset.roundToInt()) },
+            )
         }
 
         FastScrollbar(
@@ -249,11 +307,11 @@ private fun FolderGridItem(folder: MediaGroup, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MediaGroupHeader(label: String) {
+private fun MediaGroupHeader(label: String, modifier: Modifier = Modifier) {
     Text(
         text = label,
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 8.dp, vertical = 8.dp),
