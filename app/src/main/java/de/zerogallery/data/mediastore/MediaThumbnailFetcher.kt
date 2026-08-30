@@ -39,10 +39,12 @@ private const val MaxThumbnailSizePx = 512
  * revealed row of tiles had to pay that full decode cost from scratch.
  *
  * This only ever affects small, grid-sized requests (see [MaxThumbnailSizePx]) for regular
- * `content://` `MediaStore` items - it deliberately does *not* apply to
- * [de.zerogallery.data.filesystem.HiddenMediaScanner]'s `file://` items (never registered with
- * `MediaStore`, so there's no OS thumbnail to reuse for them) or to full-size detail-viewer
- * requests, both of which continue to fall through to Coil's normal fetchers/decoders unchanged.
+ * `content://` `MediaStore` items - it deliberately does *not* apply to full-size detail-viewer
+ * requests, which continue to fall through to Coil's normal fetchers/decoders unchanged.
+ * [de.zerogallery.data.filesystem.HiddenMediaScanner]'s items are also `content://` (Storage
+ * Access Framework document uris) but aren't registered with `MediaStore`, so
+ * `loadThumbnail` simply throws for them - caught below, falling through to Coil's normal
+ * fetchers/decoders exactly like it always did for those items.
  *
  * Since Android already generates and caches these thumbnails itself (regardless of whether this
  * app reads them), routing grid tiles through them is a pure win with no extra on-disk storage

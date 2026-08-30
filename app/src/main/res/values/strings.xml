@@ -18,12 +18,19 @@
     <string name="hidden_folders_show_action">Show hidden folders</string>
     <string name="hidden_folders_hide_action">Hide hidden folders</string>
     <string name="hidden_folders_permission_title">Show hidden folders?</string>
-    <string name="hidden_folders_permission_body">Hidden folders (their name starts with a dot, e.g. by a vault or messaging app) are never scanned by Android\'s media index, so ZeroGallery needs the \"All files access\" permission to read them directly. You\'ll be taken to a system settings screen to grant it.</string>
-    <string name="hidden_folders_permission_confirm">Open settings</string>
+    <string name="hidden_folders_permission_body">Hidden folders (their name starts with a dot, e.g. by a vault or messaging app) are never scanned by Android\'s media index. Pick that folder in the next screen so ZeroGallery can read its contents directly - no special permission needed.</string>
+    <string name="hidden_folders_permission_confirm">Choose folder</string>
     <string name="hidden_folders_permission_dismiss">Cancel</string>
+    <string name="hidden_folders_manage_title">Hidden folders</string>
+    <string name="hidden_folders_manage_empty">No hidden folders picked yet.</string>
+    <string name="hidden_folders_manage_add_action">Add folder…</string>
+    <string name="hidden_folders_manage_remove_action">Remove %1$s</string>
+    <string name="hidden_folders_manage_dismiss">Done</string>
 
     <string name="overflow_menu_action">More options</string>
     <string name="menu_item_video_gestures">Video gestures</string>
+    <string name="menu_item_choose_hidden_folder">Choose hidden folder…</string>
+    <string name="menu_item_manage_hidden_folders">Manage hidden folders…</string>
     <string name="video_gestures_help_title">Video gestures</string>
     <string name="video_gestures_help_intro">While playing a video with its controls hidden (tap once to hide them):</string>
     <string name="video_gestures_help_seek">Swipe left/right anywhere to scrub through the video</string>

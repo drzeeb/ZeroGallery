@@ -19,12 +19,19 @@
     <string name="hidden_folders_show_action">Mostrar carpetas ocultas</string>
     <string name="hidden_folders_hide_action">Ocultar carpetas ocultas</string>
     <string name="hidden_folders_permission_title">¿Mostrar carpetas ocultas?</string>
-    <string name="hidden_folders_permission_body">Las carpetas ocultas (su nombre empieza por un punto, por ejemplo, las de una app de bóveda o mensajería) nunca son escaneadas por el índice multimedia de Android, así que ZeroGallery necesita el permiso de «Acceso a todos los archivos» para leerlas directamente. Se te llevará a una pantalla de ajustes del sistema para concederlo.</string>
-    <string name="hidden_folders_permission_confirm">Abrir ajustes</string>
+    <string name="hidden_folders_permission_body">Las carpetas ocultas (su nombre empieza por un punto, por ejemplo, las de una app de bóveda o mensajería) nunca son escaneadas por el índice multimedia de Android. Elige esa carpeta en la siguiente pantalla para que ZeroGallery pueda leer su contenido directamente; no se necesita ningún permiso especial.</string>
+    <string name="hidden_folders_permission_confirm">Elegir carpeta</string>
     <string name="hidden_folders_permission_dismiss">Cancelar</string>
+    <string name="hidden_folders_manage_title">Carpetas ocultas</string>
+    <string name="hidden_folders_manage_empty">Todavía no se ha elegido ninguna carpeta oculta.</string>
+    <string name="hidden_folders_manage_add_action">Añadir carpeta…</string>
+    <string name="hidden_folders_manage_remove_action">Quitar %1$s</string>
+    <string name="hidden_folders_manage_dismiss">Listo</string>
 
     <string name="overflow_menu_action">Más opciones</string>
     <string name="menu_item_video_gestures">Gestos de vídeo</string>
+    <string name="menu_item_choose_hidden_folder">Elegir carpeta oculta…</string>
+    <string name="menu_item_manage_hidden_folders">Gestionar carpetas ocultas…</string>
     <string name="video_gestures_help_title">Gestos de vídeo</string>
     <string name="video_gestures_help_intro">Mientras se reproduce un vídeo con los controles ocultos (toca una vez para ocultarlos):</string>
     <string name="video_gestures_help_seek">Desliza a la izquierda/derecha en cualquier lugar para avanzar o retroceder en el vídeo</string>

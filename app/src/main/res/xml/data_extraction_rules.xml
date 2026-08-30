@@ -4,16 +4,16 @@
    for details.
 -->
 <data-extraction-rules>
+    <!-- The user-picked hidden folder's uri (see HiddenFolderAccess) refers to a persisted
+         Storage Access Framework grant that neither cloud backup nor device transfer actually
+         restores - only this uri string would come back, pointing at a folder the app has no
+         real permission to read anymore. Excluded from both so a restore/transfer never
+         resurrects that broken, silently-failing state; HiddenMediaScanner also defends against
+         it directly for anyone upgrading from a backup made before this exclusion existed. -->
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="sharedpref" path="hidden_folder_access.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="sharedpref" path="hidden_folder_access.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

@@ -19,12 +19,19 @@
     <string name="hidden_folders_show_action">Verstoppte Dossieren weisen</string>
     <string name="hidden_folders_hide_action">Verstoppte Dossieren verstoppen</string>
     <string name="hidden_folders_permission_title">Verstoppte Dossieren weisen?</string>
-    <string name="hidden_folders_permission_body">Verstoppt Dossieren (hire Numm fänkt mat engem Punkt un, z. B. vun enger Safe- oder Messaging-App) ginn ni vum Medien-Index vun Android duerchsicht. Dofir brauch ZeroGallery d\'Berechtegung „Zougang op all Dateien“ fir se direkt ze liesen. Du gëss op e Systemastellungsbildschierm gefouert fir se z\'erlaben.</string>
-    <string name="hidden_folders_permission_confirm">Astellungen opmaachen</string>
+    <string name="hidden_folders_permission_body">Verstoppt Dossieren (hire Numm fänkt mat engem Punkt un, z. B. vun enger Safe- oder Messaging-App) ginn ni vum Medien-Index vun Android duerchsicht. Wiel dëse Dossier um nächste Bildschierm aus, domat ZeroGallery säin Inhalt direkt liese kann - keng speziell Berechtegung néideg.</string>
+    <string name="hidden_folders_permission_confirm">Dossier wielen</string>
     <string name="hidden_folders_permission_dismiss">Ofbriechen</string>
+    <string name="hidden_folders_manage_title">Verstoppte Dossieren</string>
+    <string name="hidden_folders_manage_empty">Nach kee verstoppte Dossier ausgewielt.</string>
+    <string name="hidden_folders_manage_add_action">Dossier dobäisetzen…</string>
+    <string name="hidden_folders_manage_remove_action">%1$s ewechhuelen</string>
+    <string name="hidden_folders_manage_dismiss">Fäerdeg</string>
 
     <string name="overflow_menu_action">Méi Optiounen</string>
     <string name="menu_item_video_gestures">Videosgesten</string>
+    <string name="menu_item_choose_hidden_folder">Verstoppte Dossier wielen…</string>
+    <string name="menu_item_manage_hidden_folders">Verstoppte Dossieren geréieren…</string>
     <string name="video_gestures_help_title">Videosgesten</string>
     <string name="video_gestures_help_intro">Wärend en Video mat ausgeblendte Kontrollen ofgespillt gëtt (eemol tippen fir se ze verstoppen):</string>
     <string name="video_gestures_help_seek">Iwwerall no lénks/riets wëschen fir am Video virun- oder zréckzespullen</string>

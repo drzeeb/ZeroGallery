@@ -2,7 +2,7 @@ package de.zerogallery.ui.gallery
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Build
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,14 +61,16 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
+import de.zerogallery.data.filesystem.HiddenFolderAccess
 import de.zerogallery.data.mediastore.MediaDeleter
 import de.zerogallery.data.mediastore.MediaSharer
 import de.zerogallery.domain.model.MediaItem
+import de.zerogallery.domain.model.MediaSource
 import de.zerogallery.ui.detail.MediaDetailScreen
-import de.zerogallery.ui.permission.AllFilesAccessPermission
 import de.zerogallery.ui.permission.MediaPermissions
 import de.zerogallery.ui.theme.ZeroGalleryWordmark
 import de.zerogallery.ui.util.rememberWindowWidthSizeClass
@@ -123,7 +127,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     var groupingMode by rememberSaveable { mutableStateOf(GallerySettings.loadGroupingMode(context)) }
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
-    var showAllFilesAccessRationale by rememberSaveable { mutableStateOf(false) }
+    var showHiddenFolderRationale by rememberSaveable { mutableStateOf(false) }
     var selectedIds by rememberSaveable(stateSaver = listSaver(save = { it.toList() }, restore = { it.toSet() })) {
         mutableStateOf(emptySet<Long>())
     }
@@ -135,19 +139,41 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { result -> viewModel.onPermissionResult(result.values.all { it }) }
 
-    val allFilesAccessLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult(),
-    ) {
-        if (AllFilesAccessPermission.isGranted()) {
+    // Lets the user pick one or more folders HiddenMediaScanner should read (Storage Access
+    // Framework), rather than requesting the broad "All files access" special permission for the
+    // sake of this one narrow feature - see HiddenFolderAccess's class doc for why.
+    // Reflects HiddenFolderAccess.isConfigured, but as its own state rather than re-reading it on
+    // every recomposition, since the underlying SharedPreferences write only happens as a launcher
+    // callback side effect below - Compose has no way to observe that on its own.
+    var hiddenFolderConfigured by remember { mutableStateOf(HiddenFolderAccess.isConfigured(context)) }
+    // Only populated (and kept in sync) while the "Manage hidden folders" dialog is actually
+    // showing - see the LaunchedEffect below - so opening it never blocks on resolving every
+    // folder's display name (a DocumentFile query) for no reason on every other recomposition.
+    var showManageHiddenFolders by remember { mutableStateOf(false) }
+    var hiddenFolderEntries by remember { mutableStateOf<List<HiddenFolderEntry>>(emptyList()) }
+    LaunchedEffect(showManageHiddenFolders) {
+        if (showManageHiddenFolders) {
+            hiddenFolderEntries = HiddenFolderAccess.treeUris(context).map { uri ->
+                HiddenFolderEntry(uri, DocumentFile.fromTreeUri(context, uri)?.name ?: uri.toString())
+            }
+        }
+    }
+
+    val hiddenFolderPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+    ) { treeUri ->
+        if (treeUri != null) {
+            HiddenFolderAccess.add(context, treeUri)
+            hiddenFolderConfigured = true
             showHidden = true
         }
         viewModel.refresh()
     }
 
     // Fires after the user confirms/cancels the system delete-confirmation dialog for regular
-    // MediaStore items (API 30+, see MediaDeleter.createDeleteRequest) - any HiddenMediaScanner
-    // file:// items in the same batch were already deleted directly beforehand (see performDelete
-    // below), since there's no equivalent confirmation flow for those regardless of API level.
+    // MediaStore items (API 30+, see MediaDeleter.createDeleteRequest) - any HIDDEN_FOLDER items
+    // in the same batch were already deleted directly beforehand (see performDelete below), since
+    // there's no equivalent confirmation flow for those regardless of API level.
     val deleteRequestLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
@@ -159,16 +185,16 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     }
 
     fun performDelete(items: List<MediaItem>) {
-        val (fileItems, contentItems) = items.partition { it.uri.scheme == "file" }
-        if (fileItems.isNotEmpty()) {
-            MediaDeleter.delete(context, fileItems)
+        val (hiddenFolderItems, mediaStoreItems) = items.partition { it.source == MediaSource.HIDDEN_FOLDER }
+        if (hiddenFolderItems.isNotEmpty()) {
+            MediaDeleter.delete(context, hiddenFolderItems)
         }
-        val deleteRequest = MediaDeleter.createDeleteRequest(context, contentItems.map { it.uri })
+        val deleteRequest = MediaDeleter.createDeleteRequest(context, mediaStoreItems.map { it.uri })
         if (deleteRequest != null) {
             deleteRequestLauncher.launch(IntentSenderRequest.Builder(deleteRequest).build())
         } else {
-            if (contentItems.isNotEmpty()) {
-                MediaDeleter.delete(context, contentItems)
+            if (mediaStoreItems.isNotEmpty()) {
+                MediaDeleter.delete(context, mediaStoreItems)
             }
             viewModel.refresh()
             selectedIds = emptySet()
@@ -179,10 +205,9 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     // Skips the app's own confirmation dialog whenever Android will already show its own
     // scoped-storage confirmation for the items being deleted (MediaDeleter.needsSystemConfirmation)
     // - asking the user twice in a row to confirm the same deletion is redundant and confusing.
-    // That's only true for regular content:// items on API 30+ without "All files access" though:
-    // once that's granted (or below API 30), there's no such system dialog at all - including for
-    // HiddenMediaScanner's file:// items, which never get one on any API level - so the app's own
-    // dialog is shown instead, as the only safety net left.
+    // That's only true for MediaSource.MEDIA_STORE items on API 30+ though: below that, or for
+    // MediaSource.HIDDEN_FOLDER items on any API level, there's no such system dialog at all - so
+    // the app's own dialog is shown instead, as the only safety net left.
     fun requestDelete(items: List<MediaItem>) {
         if (MediaDeleter.needsSystemConfirmation(context)) {
             performDelete(items)
@@ -197,18 +222,31 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
         viewModel.refresh()
     }
 
-    if (showAllFilesAccessRationale) {
-        AllFilesAccessRationaleDialog(
+    if (showHiddenFolderRationale) {
+        HiddenFolderRationaleDialog(
             onConfirm = {
-                showAllFilesAccessRationale = false
-                // Only ever shown once !AllFilesAccessPermission.isGranted(), which implies API
-                // 30+ - the explicit check here just satisfies lint's static analysis, which can't
-                // follow that implication across the showAllFilesAccessRationale state indirection.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    allFilesAccessLauncher.launch(AllFilesAccessPermission.requestIntent(context))
-                }
+                showHiddenFolderRationale = false
+                hiddenFolderPickerLauncher.launch(null)
             },
-            onDismiss = { showAllFilesAccessRationale = false },
+            onDismiss = { showHiddenFolderRationale = false },
+        )
+    }
+
+    if (showManageHiddenFolders) {
+        HiddenFoldersManageDialog(
+            folders = hiddenFolderEntries,
+            onAddFolder = {
+                showManageHiddenFolders = false
+                hiddenFolderPickerLauncher.launch(null)
+            },
+            onRemoveFolder = { entry ->
+                HiddenFolderAccess.remove(context, entry.uri)
+                hiddenFolderEntries = hiddenFolderEntries - entry
+                hiddenFolderConfigured = HiddenFolderAccess.isConfigured(context)
+                if (!hiddenFolderConfigured) showHidden = false
+                viewModel.refresh()
+            },
+            onDismiss = { showManageHiddenFolders = false },
         )
     }
 
@@ -288,14 +326,17 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             showHidden = showHidden,
             selectedIds = selectedIds,
             saveableStateHolder = saveableStateHolder,
+            hiddenFolderConfigured = hiddenFolderConfigured,
+            onChooseHiddenFolder = { hiddenFolderPickerLauncher.launch(null) },
+            onManageHiddenFolders = { showManageHiddenFolders = true },
             onGroupingModeChange = {
                 groupingMode = it
                 selectedFolderLabel = null
                 GallerySettings.saveGroupingMode(context, it)
             },
             onShowHiddenChange = { wantShown ->
-                if (wantShown && !AllFilesAccessPermission.isGranted()) {
-                    showAllFilesAccessRationale = true
+                if (wantShown && !HiddenFolderAccess.isConfigured(context)) {
+                    showHiddenFolderRationale = true
                 } else {
                     showHidden = wantShown
                 }
@@ -351,6 +392,9 @@ private fun GalleryScreen(
     showHidden: Boolean,
     selectedIds: Set<Long>,
     saveableStateHolder: SaveableStateHolder,
+    hiddenFolderConfigured: Boolean,
+    onChooseHiddenFolder: () -> Unit,
+    onManageHiddenFolders: () -> Unit,
     onGroupingModeChange: (MediaGroupingMode) -> Unit,
     onShowHiddenChange: (Boolean) -> Unit,
     onFolderOpen: (String) -> Unit,
@@ -472,6 +516,27 @@ private fun GalleryScreen(
                                             showVideoGesturesHelp = true
                                         },
                                     )
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(
+                                                    if (hiddenFolderConfigured) {
+                                                        R.string.menu_item_manage_hidden_folders
+                                                    } else {
+                                                        R.string.menu_item_choose_hidden_folder
+                                                    },
+                                                ),
+                                            )
+                                        },
+                                        onClick = {
+                                            isOverflowMenuExpanded = false
+                                            if (hiddenFolderConfigured) {
+                                                onManageHiddenFolders()
+                                            } else {
+                                                onChooseHiddenFolder()
+                                            }
+                                        },
+                                    )
                                 }
                             }
                         }
@@ -574,13 +639,20 @@ private fun EmptyGalleryMessage() {
 }
 
 /**
- * Explains *why* showing hidden folders needs the special, powerful "All files access" permission
- * (see [AllFilesAccessPermission]) - unlike the initial media permission, this can't just be
- * requested via a system dialog, so the user needs to understand what they're about to be sent to
- * a Settings screen for and why a normal permission wasn't enough, before being sent there.
+ * One entry in [HiddenFoldersManageDialog]'s list: a previously picked hidden folder's uri
+ * together with its display name (its own folder name, resolved once via [DocumentFile] while the
+ * dialog is open - see [GalleryRoute]'s `LaunchedEffect(showManageHiddenFolders)`).
+ */
+private data class HiddenFolderEntry(val uri: Uri, val displayName: String)
+
+/**
+ * Explains *why* showing hidden folders is about to open the system's folder picker (Storage
+ * Access Framework, see [HiddenFolderAccess]) instead of just toggling on immediately like the
+ * initial media permission does - the user needs to understand what they're about to be sent to
+ * pick a folder for, and that they should pick the specific hidden folder they want surfaced.
  */
 @Composable
-private fun AllFilesAccessRationaleDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun HiddenFolderRationaleDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.hidden_folders_permission_title)) },
@@ -593,6 +665,68 @@ private fun AllFilesAccessRationaleDialog(onConfirm: () -> Unit, onDismiss: () -
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.hidden_folders_permission_dismiss))
+            }
+        },
+    )
+}
+
+/**
+ * Lists every hidden folder currently picked (see [HiddenFolderAccess]), each removable
+ * individually, plus a way to pick yet another one - the "show hidden folders" toggle itself only
+ * ever offers the picker once, while unconfigured (see [HiddenFolderRationaleDialog]), so this is
+ * the only place to add more than the first folder, or to drop one that's no longer wanted, again
+ * without clearing app data.
+ */
+@Composable
+private fun HiddenFoldersManageDialog(
+    folders: List<HiddenFolderEntry>,
+    onAddFolder: () -> Unit,
+    onRemoveFolder: (HiddenFolderEntry) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.hidden_folders_manage_title)) },
+        text = {
+            if (folders.isEmpty()) {
+                Text(stringResource(R.string.hidden_folders_manage_empty))
+            } else {
+                Column {
+                    folders.forEach { folder ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = folder.displayName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                            )
+                            IconButton(onClick = { onRemoveFolder(folder) }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = stringResource(
+                                        R.string.hidden_folders_manage_remove_action,
+                                        folder.displayName,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onAddFolder) {
+                Text(stringResource(R.string.hidden_folders_manage_add_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.hidden_folders_manage_dismiss))
             }
         },
     )
