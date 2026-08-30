@@ -7,15 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,8 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.zerogallery.R
-import de.zerogallery.domain.model.MediaItem
-import de.zerogallery.domain.model.MediaType
 import de.zerogallery.ui.permission.MediaPermissions
 
 /**
@@ -54,9 +48,8 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
 /**
  * Stateless gallery screen.
  *
- * NOTE: Phase 1 renders a simple, single-column list purely to verify that the MediaStore data
- * layer and the permission flow work end to end. Phase 2 replaces [MediaContentList] with an
- * adaptive grid ([androidx.compose.foundation.lazy.grid.LazyVerticalGrid]) with thumbnails.
+ * Renders [MediaGrid], an adaptive thumbnail grid (see [MediaGrid.kt]). Phase 3 will refine the
+ * breakpoints using `WindowSizeClass`; Phase 4 adds the full-screen detail viewer opened from here.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +70,7 @@ private fun GalleryScreen(
                 is GalleryUiState.Loading -> CircularProgressIndicator()
                 is GalleryUiState.PermissionRequired -> PermissionRationale(onRequestPermission)
                 is GalleryUiState.Empty -> EmptyGalleryMessage()
-                is GalleryUiState.Content -> MediaContentList(uiState.items)
+                is GalleryUiState.Content -> MediaGrid(items = uiState.items)
             }
         }
     }
@@ -120,27 +113,6 @@ private fun EmptyGalleryMessage() {
             text = stringResource(R.string.empty_gallery_body),
             style = MaterialTheme.typography.bodyMedium,
         )
-    }
-}
-
-@Composable
-private fun MediaContentList(items: List<MediaItem>) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(items = items, key = { it.id }) { item ->
-            ListItem(
-                headlineContent = { Text(item.displayName) },
-                leadingContent = {
-                    Icon(
-                        imageVector = if (item.mediaType == MediaType.VIDEO) {
-                            Icons.Filled.Videocam
-                        } else {
-                            Icons.Filled.PhotoLibrary
-                        },
-                        contentDescription = null,
-                    )
-                },
-            )
-        }
     }
 }
 

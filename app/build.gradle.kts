@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.material)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.video)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
