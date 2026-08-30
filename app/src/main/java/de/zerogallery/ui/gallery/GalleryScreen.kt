@@ -86,7 +86,11 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
  * (covers both the initial launch and the user returning to the app, e.g. after granting the
  * permission from Settings) so an already-granted permission is picked up immediately.
  *
- * [groupingMode] (see [MediaGroupingMode]) is also owned here rather than inside [GalleryScreen].
+ * [groupingMode] (see [MediaGroupingMode]) is also owned here rather than inside [GalleryScreen],
+ * and is the one piece of this screen's state that survives beyond just [rememberSaveable] -
+ * [GallerySettings] persists it across full app restarts too (see its class doc), so switching to
+ * date/folder grouping sticks around for good instead of quietly resetting back to the flat grid
+ * every time the app is relaunched from a cold start.
  * [MediaGroupingMode.FOLDER] is a genuine two-level drill-down, not just a section header: tapping
  * the grouping button first shows a *folder picker* ([FolderGrid], one tile per folder with a
  * cover photo), and only opening one of those (setting [selectedFolderLabel]) then shows that
@@ -112,8 +116,11 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
 @Composable
 fun GalleryRoute(viewModel: GalleryViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var selectedIndex by rememberSaveable { mutableStateOf<Int?>(null) }
-    var groupingMode by rememberSaveable { mutableStateOf(MediaGroupingMode.NONE) }
+    // Seeded from GallerySettings (persisted across full app restarts, unlike rememberSaveable
+    // alone - see its class doc) rather than always starting at MediaGroupingMode.NONE.
+    var groupingMode by rememberSaveable { mutableStateOf(GallerySettings.loadGroupingMode(context)) }
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
     var showAllFilesAccessRationale by rememberSaveable { mutableStateOf(false) }
@@ -122,7 +129,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     }
     var pendingDeleteItems by remember { mutableStateOf<List<MediaItem>?>(null) }
     val saveableStateHolder = rememberSaveableStateHolder()
-    val context = LocalContext.current
+
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -284,6 +291,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             onGroupingModeChange = {
                 groupingMode = it
                 selectedFolderLabel = null
+                GallerySettings.saveGroupingMode(context, it)
             },
             onShowHiddenChange = { wantShown ->
                 if (wantShown && !AllFilesAccessPermission.isGranted()) {
