@@ -4,34 +4,34 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
 
-**ZeroGallery** ist eine extrem schlanke, werbefreie und **100 % offline** nutzbare Galerie-App für Fotos und Videos auf Android.
+**ZeroGallery** is an extremely lightweight, ad-free and **100% offline** gallery app for photos and videos on Android.
 
-Kein Tracking. Kein Internet-Zugriff. Keine Cloud. Nur deine Medien, deine Kontrolle.
+No tracking. No internet access. No cloud. Just your media, your control.
 
 ## ✨ Features
 
-- 📷 **Schnelles, natives Einlesen** von Fotos & Videos via `MediaStore`
-- 🖼️ **Performantes Grid** mit gecachten Thumbnails (Bilder & Videos)
-- 📱💻 **Adaptive UI** – responsive Layout für Phones *und* Tablets (dynamische Spaltenanzahl, Breakpoints)
-- 🔍 **Vollbild-Viewer** mit Swipe-Navigation (`HorizontalPager`)
-- ▶️ **Video-Wiedergabe** via [Media3/ExoPlayer](https://developer.android.com/media/media3) (Apache 2.0, hardwarebeschleunigt)
-- 🔒 **Keine `INTERNET`-Permission** – die App kann technisch nicht ins Netz
+- 📷 **Fast, native scanning** of photos & videos via `MediaStore`
+- 🖼️ **Performant grid** with cached thumbnails (images & videos)
+- 📱💻 **Adaptive UI** – responsive layout for phones *and* tablets (dynamic column count, breakpoints)
+- 🔍 **Fullscreen viewer** with swipe navigation (`HorizontalPager`)
+- ▶️ **Video playback** via [Media3/ExoPlayer](https://developer.android.com/media/media3) (Apache 2.0, hardware-accelerated)
+- 🔒 **No `INTERNET` permission** – the app is technically incapable of network access
 
-## 🚫 Warum keine Internet-Permission?
+## 🚫 Why no internet permission?
 
-ZeroGallery deklariert **bewusst kein** `android.permission.INTERNET`. Das ist keine Konfigurationsoption, sondern eine architektonische Garantie: Ohne diese Permission kann die App – unabhängig vom Code – niemals Daten versenden oder empfangen.
+ZeroGallery **deliberately does not** declare `android.permission.INTERNET`. This is not a configuration option but an architectural guarantee: without this permission, the app can never send or receive data — regardless of what the code does.
 
 ## 🛠️ Tech Stack
 
 - **Kotlin** + **Jetpack Compose** + **Material 3**
 - Clean Architecture (Data / Domain / UI)
-- [Coil](https://coil-kt.github.io/coil/) für Thumbnail-Loading & Caching
-- [Media3/ExoPlayer](https://developer.android.com/media/media3) für Video-Wiedergabe
-- Min SDK 24, Ziel SDK aktuell
+- [Coil](https://coil-kt.github.io/coil/) for thumbnail loading & caching
+- [Media3/ExoPlayer](https://developer.android.com/media/media3) for video playback
+- Min SDK 24, latest target SDK
 
 ## 📦 Installation
 
-Aktuell befindet sich das Projekt in aktiver Entwicklung. Releases werden zu gegebener Zeit über GitHub Releases bzw. F-Droid bereitgestellt.
+The project is currently under active development. Releases will be provided via GitHub Releases and/or F-Droid in due course.
 
 ```bash
 git clone https://github.com/drzeeb/ZeroGallery.git
@@ -41,19 +41,19 @@ cd ZeroGallery
 
 ## 🗺️ Roadmap
 
-- [x] Projekt-Setup, Lizenz, CI
-- [ ] MediaStore Data-Layer & Permission-Handling
-- [ ] Basis-Grid (Phone)
-- [ ] Adaptive Layout (Tablet-Support)
-- [ ] Detail-Viewer & Video-Player
+- [x] Project setup, license, CI
+- [ ] MediaStore data layer & permission handling
+- [ ] Basic grid (phone)
+- [ ] Adaptive layout (tablet support)
+- [ ] Detail viewer & video player
 
 ## 🤝 Contributing
 
-Contributions sind willkommen! Bitte öffne ein Issue, bevor du an größeren Features arbeitest, um Doppelarbeit zu vermeiden.
+Contributions are welcome! Please open an issue before working on larger features to avoid duplicate work.
 
-## 📄 Lizenz
+## 📄 License
 
-Dieses Projekt steht unter der **Apache License 2.0** – siehe [LICENSE](LICENSE) für Details.
+This project is licensed under the **Apache License 2.0** – see [LICENSE](LICENSE) for details.
 
-Verwendete Drittanbieter-Bibliotheken werden in [NOTICE](NOTICE) aufgeführt.
+Third-party libraries in use are listed in [NOTICE](NOTICE).
 
