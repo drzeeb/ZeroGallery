@@ -82,6 +82,36 @@ produces an *unsigned* bundle/APK - useful for a dry run, but not installable/up
 The keystore and its passwords are intentionally never committed to this repository, not even
 encrypted - see the comment above `releaseSigningConfigured` in `app/build.gradle.kts` for why.
 
+### Uploading to the Play Store (fastlane)
+
+The release workflow can also automatically upload the signed bundle - along with this repo's
+store listing text (`fastlane/metadata/android/<locale>/title.txt`/`short_description.txt`/
+`full_description.txt`/`changelogs/<versionCode>.txt`) - to a Play Console track, via
+[fastlane](https://fastlane.tools)'s `supply` action (see `fastlane/Fastfile`). This needs a
+Play Console **service account** set up once:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create a service account
+   (any project) and generate a JSON key for it.
+2. In the Play Console, under *Setup → API access*, link that same Cloud project and grant the
+   service account at least the "Release manager" permission for this app.
+3. Base64-encode the downloaded JSON key (`base64 -w0 your-key.json`) and store it as the repo
+   secret `PLAY_STORE_JSON_KEY_BASE64`.
+4. Set the repo **variable** `PLAY_STORE_UPLOAD_ENABLED` to `true`.
+
+Without step 4, the release workflow behaves exactly as before (GitHub Release only, no Play
+Store upload attempted) - useful while you're not Play Console-ready yet (see the closed-testing
+requirement for new developer accounts). Once enabled, pick the target track (`internal`,
+`alpha`, `beta` or `production`) as an input when running the workflow; `internal` is the right
+choice for a brand new listing still going through Google's mandatory closed-testing period.
+
+Screenshots and the feature graphic aren't checked into this repo yet, so `supply` is configured
+to leave images alone entirely (`skip_upload_images`/`skip_upload_screenshots` in the Fastfile) -
+add them under `fastlane/metadata/android/<locale>/images/` once available and drop those two
+flags to have fastlane manage them too.
+
+You can also run any of this locally instead of through CI: `bundle exec fastlane android deploy
+track:internal` (with `GOOGLE_PLAY_JSON_KEY_PATH` pointing at your own downloaded key file).
+
 ## 📄 License
 
 This project is licensed under the **Apache License 2.0** – see [LICENSE](LICENSE) for details.

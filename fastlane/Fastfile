@@ -1,0 +1,34 @@
+default_platform(:android)
+
+# Play Store publishing automation. Building itself is just a thin wrapper around the same Gradle
+# task release.yml already runs directly (bundleRelease) - the real point of going through fastlane
+# at all is `upload_to_play_store` (aka the `supply` action), which needs a Play Console service
+# account JSON key to authenticate (see README's "Releasing" section for how to create one and
+# where GOOGLE_PLAY_JSON_KEY_PATH - read by Appfile - comes from in CI).
+platform :android do
+  desc "Builds the signed release App Bundle (needs the RELEASE_KEYSTORE_*/RELEASE_KEY_* env vars app/build.gradle.kts's signingConfig reads - see release.yml)."
+  lane :build do
+    gradle(task: "bundleRelease")
+  end
+
+  desc "Uploads the already-built release App Bundle, plus this repo's fastlane/metadata/android listing text (title/descriptions/changelog), to a Play Console track. Usage: `bundle exec fastlane android deploy track:internal` (default track: internal - the mandatory closed-testing track for a brand new Play Console listing; use production once eligible)."
+  lane :deploy do |options|
+    upload_to_play_store(
+      track: options[:track] || "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab",
+      skip_upload_apk: true,
+      # No screenshots/feature graphic are checked into this repo yet (see README) - without
+      # these two flags, supply would otherwise fail the *entire* upload as soon as any listing
+      # locale below is still missing them, rather than just leaving those two assets alone.
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  desc "Builds and uploads in one go - the same thing release.yml's optional Play Store upload step does. Usage: `bundle exec fastlane android release track:internal`."
+  lane :release do |options|
+    build
+    deploy(track: options[:track])
+  end
+end
+
