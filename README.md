@@ -43,7 +43,7 @@ cd ZeroGallery
 
 - [x] Project setup, license, CI
 - [x] MediaStore data layer & permission handling
-- [ ] Basic grid (phone)
+- [x] Basic grid (phone)
 - [ ] Adaptive layout (tablet support)
 - [ ] Detail viewer & video player
 

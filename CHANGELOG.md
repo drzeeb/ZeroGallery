@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Adaptive thumbnail grid (`MediaGrid`) using `LazyVerticalGrid(GridCells.Adaptive)` - column count grows automatically with available width, no hard-coded breakpoints needed for phones vs. tablets
+- Coil-based thumbnail loading for both images and videos through a single `AsyncImage(model = uri)` call, backed by a custom `ImageLoader` (`ZeroGalleryApplication`) registering Coil's video frame decoder
+- Duration badge overlay on video thumbnails (`formatDuration`, unit-tested)
 - Project setup: Apache 2.0 license, README, CI workflow (`ci.yml`)
 - MediaStore data layer (`MediaRepository`, `MediaStoreRepository`) reading photos & videos via `ContentResolver`, auto-refreshing on changes
 - Runtime permission handling (`MediaPermissions`) for granular media permissions (API 33+) with legacy storage permission fallback
