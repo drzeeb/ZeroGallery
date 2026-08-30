@@ -48,15 +48,23 @@ import kotlinx.coroutines.launch
  * The on-screen aspect-ratio behaviours a user can cycle through by tapping the aspect-ratio
  * button in [VideoPlayer], mirroring the aspect-ratio cycling found in players like VLC:
  * - [FIT]: the whole video stays visible, letterboxed with black bars if its aspect ratio doesn't
- *   match the screen - the default, no cropping or distortion.
+ *   match the screen - the default, no cropping or distortion. Uses `min(screenWidth / videoWidth,
+ *   screenHeight / videoHeight)` as the (single, uniform) scale factor, so whichever axis has the
+ *   *smaller* required scale reaches its edge exactly, and the other axis falls short (black bars).
  * - [CROP]: the video fills the entire screen with no black bars, preserving its aspect ratio by
- *   cropping whatever doesn't fit (zoom-to-fill).
- * - [STRETCH]: the video is enlarged to fill the entire screen edge-to-edge, exactly like [CROP] -
- *   *not* [AspectRatioFrameLayout.RESIZE_MODE_FILL], which stretches width/height independently
- *   and visibly distorts the picture (circles become ovals, people look squashed/elongated). A
- *   video's aspect ratio always has to be preserved one way or another, so "filling the whole
- *   screen" and "distorting the image" are mutually exclusive - the former is achieved here by
- *   uniformly scaling up and letting whatever doesn't fit run off-screen, same as [CROP].
+ *   cropping whatever doesn't fit (zoom-to-fill). The mirror image of [FIT]: uses `max(...)` as the
+ *   uniform scale factor, so the axis with the *larger* required scale reaches its edge exactly,
+ *   and the other axis overflows past it (cropped).
+ * - [STRETCH]: fills the entire screen edge-to-edge on *both* axes at once by scaling width and
+ *   height independently (`screenWidth / videoWidth` and `screenHeight / videoHeight` each applied
+ *   on their own axis, [AspectRatioFrameLayout.RESIZE_MODE_FILL]) - i.e. whichever axis would've
+ *   fallen short under [FIT] (the smaller of the two scale factors) gets stretched the rest of the
+ *   way to the edge instead of leaving black bars. E.g. a 16:9 landscape video played on a taller/
+ *   narrower screen: width already matches under [FIT], but height falls short - [STRETCH] scales
+ *   height up further (independently of width) until it also reaches the screen edge. This
+ *   necessarily distorts the picture on that axis (circles become ovals) since the video's original
+ *   aspect ratio is not preserved - that's the whole point of this mode, same as VLC's "stretch to
+ *   fill" aspect-ratio option.
  *
  * [AspectRatioFrameLayout]'s `RESIZE_MODE_*` constants are `@UnstableApi` in Media3, opted into
  * project-wide via `app/lint.xml` since they're just plain, stable resize-mode integers under the
@@ -65,7 +73,7 @@ import kotlinx.coroutines.launch
 private enum class VideoResizeMode(val frameLayoutMode: Int, val labelRes: Int) {
     FIT(AspectRatioFrameLayout.RESIZE_MODE_FIT, R.string.video_resize_mode_fit),
     CROP(AspectRatioFrameLayout.RESIZE_MODE_ZOOM, R.string.video_resize_mode_crop),
-    STRETCH(AspectRatioFrameLayout.RESIZE_MODE_ZOOM, R.string.video_resize_mode_stretch),
+    STRETCH(AspectRatioFrameLayout.RESIZE_MODE_FILL, R.string.video_resize_mode_stretch),
 }
 
 /** How long the current mode's label stays visible after tapping the aspect-ratio button. */
