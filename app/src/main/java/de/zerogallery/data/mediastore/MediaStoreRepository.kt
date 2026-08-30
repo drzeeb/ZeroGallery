@@ -28,8 +28,9 @@ import kotlinx.coroutines.withContext
  *
  * Also merges in [HiddenMediaScanner]'s results: dot-prefixed "hidden" folders are never scanned
  * into MediaStore by the platform at all, so no ContentResolver query can ever surface them - a
- * raw filesystem walk is the only way. That's a no-op unless "All files access" has been granted
- * (see [de.zerogallery.ui.permission.AllFilesAccessPermission]), so this is always safe to call.
+ * Storage Access Framework document tree walk is the only way. That's a no-op until the user has
+ * picked a folder (see [de.zerogallery.data.filesystem.HiddenFolderAccess]), so this is always
+ * safe to call.
  */
 class MediaStoreRepository(
     private val context: Context,

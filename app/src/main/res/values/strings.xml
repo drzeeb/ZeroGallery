@@ -18,8 +18,8 @@
     <string name="hidden_folders_show_action">Show hidden folders</string>
     <string name="hidden_folders_hide_action">Hide hidden folders</string>
     <string name="hidden_folders_permission_title">Show hidden folders?</string>
-    <string name="hidden_folders_permission_body">Hidden folders (their name starts with a dot, e.g. by a vault or messaging app) are never scanned by Android\'s media index, so ZeroGallery needs the \"All files access\" permission to read them directly. You\'ll be taken to a system settings screen to grant it.</string>
-    <string name="hidden_folders_permission_confirm">Open settings</string>
+    <string name="hidden_folders_permission_body">Hidden folders (their name starts with a dot, e.g. by a vault or messaging app) are never scanned by Android\'s media index. Pick that folder in the next screen so ZeroGallery can read its contents directly - no special permission needed.</string>
+    <string name="hidden_folders_permission_confirm">Choose folder</string>
     <string name="hidden_folders_permission_dismiss">Cancel</string>
 
     <string name="overflow_menu_action">More options</string>

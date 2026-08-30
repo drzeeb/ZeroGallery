@@ -18,8 +18,8 @@
     <string name="hidden_folders_show_action">Mostrar pastas ocultas</string>
     <string name="hidden_folders_hide_action">Ocultar pastas ocultas</string>
     <string name="hidden_folders_permission_title">Mostrar pastas ocultas?</string>
-    <string name="hidden_folders_permission_body">As pastas ocultas (o nome delas começa com um ponto, por exemplo, usadas por uma app de cofre ou de mensagens) nunca são analisadas pelo índice de multimédia do Android, por isso a ZeroGallery precisa da permissão de "Acesso a todos os ficheiros" para as ler diretamente. Vais ser levado a um ecrã de definições do sistema para a conceder.</string>
-    <string name="hidden_folders_permission_confirm">Abrir definições</string>
+    <string name="hidden_folders_permission_body">As pastas ocultas (o nome delas começa com um ponto, por exemplo, usadas por uma app de cofre ou de mensagens) nunca são analisadas pelo índice de multimédia do Android. Escolhe essa pasta no ecrã seguinte para que a ZeroGallery possa ler o seu conteúdo diretamente - não é necessária qualquer permissão especial.</string>
+    <string name="hidden_folders_permission_confirm">Escolher pasta</string>
     <string name="hidden_folders_permission_dismiss">Cancelar</string>
 
     <string name="overflow_menu_action">Mais opções</string>

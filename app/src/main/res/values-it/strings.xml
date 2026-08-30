@@ -18,8 +18,8 @@
     <string name="hidden_folders_show_action">Mostra cartelle nascoste</string>
     <string name="hidden_folders_hide_action">Nascondi cartelle nascoste</string>
     <string name="hidden_folders_permission_title">Mostrare le cartelle nascoste?</string>
-    <string name="hidden_folders_permission_body">Le cartelle nascoste (il cui nome inizia con un punto, ad es. usate da un\'app di cassaforte o messaggistica) non vengono mai analizzate dall\'indice multimediale di Android, quindi ZeroGallery ha bisogno del permesso \"Accesso a tutti i file\" per leggerle direttamente. Verrai indirizzato a una schermata delle impostazioni di sistema per concederlo.</string>
-    <string name="hidden_folders_permission_confirm">Apri impostazioni</string>
+    <string name="hidden_folders_permission_body">Le cartelle nascoste (il cui nome inizia con un punto, ad es. usate da un\'app di cassaforte o messaggistica) non vengono mai analizzate dall\'indice multimediale di Android. Scegli quella cartella nella schermata successiva così che ZeroGallery possa leggerne direttamente il contenuto - non serve alcun permesso speciale.</string>
+    <string name="hidden_folders_permission_confirm">Scegli cartella</string>
     <string name="hidden_folders_permission_dismiss">Annulla</string>
 
     <string name="overflow_menu_action">Altre opzioni</string>

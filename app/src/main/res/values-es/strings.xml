@@ -19,8 +19,8 @@
     <string name="hidden_folders_show_action">Mostrar carpetas ocultas</string>
     <string name="hidden_folders_hide_action">Ocultar carpetas ocultas</string>
     <string name="hidden_folders_permission_title">¿Mostrar carpetas ocultas?</string>
-    <string name="hidden_folders_permission_body">Las carpetas ocultas (su nombre empieza por un punto, por ejemplo, las de una app de bóveda o mensajería) nunca son escaneadas por el índice multimedia de Android, así que ZeroGallery necesita el permiso de «Acceso a todos los archivos» para leerlas directamente. Se te llevará a una pantalla de ajustes del sistema para concederlo.</string>
-    <string name="hidden_folders_permission_confirm">Abrir ajustes</string>
+    <string name="hidden_folders_permission_body">Las carpetas ocultas (su nombre empieza por un punto, por ejemplo, las de una app de bóveda o mensajería) nunca son escaneadas por el índice multimedia de Android. Elige esa carpeta en la siguiente pantalla para que ZeroGallery pueda leer su contenido directamente; no se necesita ningún permiso especial.</string>
+    <string name="hidden_folders_permission_confirm">Elegir carpeta</string>
     <string name="hidden_folders_permission_dismiss">Cancelar</string>
 
     <string name="overflow_menu_action">Más opciones</string>

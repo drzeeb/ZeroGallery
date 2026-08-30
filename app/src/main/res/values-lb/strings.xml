@@ -19,8 +19,8 @@
     <string name="hidden_folders_show_action">Verstoppte Dossieren weisen</string>
     <string name="hidden_folders_hide_action">Verstoppte Dossieren verstoppen</string>
     <string name="hidden_folders_permission_title">Verstoppte Dossieren weisen?</string>
-    <string name="hidden_folders_permission_body">Verstoppt Dossieren (hire Numm fänkt mat engem Punkt un, z. B. vun enger Safe- oder Messaging-App) ginn ni vum Medien-Index vun Android duerchsicht. Dofir brauch ZeroGallery d\'Berechtegung „Zougang op all Dateien“ fir se direkt ze liesen. Du gëss op e Systemastellungsbildschierm gefouert fir se z\'erlaben.</string>
-    <string name="hidden_folders_permission_confirm">Astellungen opmaachen</string>
+    <string name="hidden_folders_permission_body">Verstoppt Dossieren (hire Numm fänkt mat engem Punkt un, z. B. vun enger Safe- oder Messaging-App) ginn ni vum Medien-Index vun Android duerchsicht. Wiel dëse Dossier um nächste Bildschierm aus, domat ZeroGallery säin Inhalt direkt liese kann - keng speziell Berechtegung néideg.</string>
+    <string name="hidden_folders_permission_confirm">Dossier wielen</string>
     <string name="hidden_folders_permission_dismiss">Ofbriechen</string>
 
     <string name="overflow_menu_action">Méi Optiounen</string>

@@ -18,8 +18,8 @@
     <string name="hidden_folders_show_action">Verborgen mappen tonen</string>
     <string name="hidden_folders_hide_action">Verborgen mappen verbergen</string>
     <string name="hidden_folders_permission_title">Verborgen mappen tonen?</string>
-    <string name="hidden_folders_permission_body">Verborgen mappen (hun naam begint met een punt, bijv. van een kluis- of berichten-app) worden nooit gescand door de media-index van Android. Daarom heeft ZeroGallery de machtiging \"Toegang tot alle bestanden\" nodig om ze rechtstreeks te lezen. Je wordt naar een systeeminstellingenscherm gebracht om deze te verlenen.</string>
-    <string name="hidden_folders_permission_confirm">Instellingen openen</string>
+    <string name="hidden_folders_permission_body">Verborgen mappen (hun naam begint met een punt, bijv. van een kluis- of berichten-app) worden nooit gescand door de media-index van Android. Kies die map op het volgende scherm zodat ZeroGallery de inhoud rechtstreeks kan lezen - geen speciale machtiging nodig.</string>
+    <string name="hidden_folders_permission_confirm">Map kiezen</string>
     <string name="hidden_folders_permission_dismiss">Annuleren</string>
 
     <string name="overflow_menu_action">Meer opties</string>
