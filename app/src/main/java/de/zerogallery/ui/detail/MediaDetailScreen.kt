@@ -11,6 +11,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import de.zerogallery.R
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
 import de.zerogallery.ui.util.findActivity
@@ -55,6 +59,11 @@ import de.zerogallery.ui.util.findActivity
  * system bars would keep drawing on top of the media even with our own overlay hidden. They're
  * restored as soon as the chrome is toggled back on, and unconditionally when leaving this screen
  * so the rest of the app isn't left in an immersive state.
+ *
+ * [onShareItem]/[onDeleteItem] act on whichever page is currently visible ([currentItem]) - the
+ * actual OS interaction (building the share `Intent`, launching the delete-confirmation flow) is
+ * left to the caller ([de.zerogallery.ui.gallery.GalleryRoute]), which already owns that logic for
+ * the grid's own multi-select actions.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +71,8 @@ fun MediaDetailScreen(
     items: List<MediaItem>,
     initialIndex: Int,
     onClose: () -> Unit,
+    onShareItem: (MediaItem) -> Unit,
+    onDeleteItem: (MediaItem) -> Unit,
 ) {
     BackHandler(onBack = onClose)
 
@@ -131,6 +142,24 @@ fun MediaDetailScreen(
                             contentDescription = null,
                             tint = Color.White,
                         )
+                    }
+                },
+                actions = {
+                    if (currentItem != null) {
+                        IconButton(onClick = { onShareItem(currentItem) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Share,
+                                contentDescription = stringResource(R.string.share_action),
+                                tint = Color.White,
+                            )
+                        }
+                        IconButton(onClick = { onDeleteItem(currentItem) }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.delete_action),
+                                tint = Color.White,
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

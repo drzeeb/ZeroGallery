@@ -1,6 +1,8 @@
 package de.zerogallery.ui.gallery
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +20,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -39,7 +44,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.clickable
 import coil3.compose.AsyncImage
 import de.zerogallery.R
 import de.zerogallery.domain.model.MediaItem
@@ -85,12 +89,20 @@ internal fun gridSpacing(windowWidthSizeClass: WindowWidthSizeClass) =
  *
  * A [FastScrollbar] thumb is overlaid on the right edge, letting a large grid be dragged through
  * quickly instead of only flinging one screen at a time - see its class doc for details.
+ *
+ * Long-pressing a tile invokes [onItemLongClick] with that item - used to enter/extend a
+ * multi-select mode (see [de.zerogallery.ui.gallery.GalleryRoute]). While [selectedIds] is
+ * non-empty, tapping a tile is expected to toggle its selection instead of opening the detail
+ * viewer - that distinction is made by whatever [onItemClick] does, not by [MediaGrid] itself, so
+ * it stays a simple, stateless "index was tapped" callback either way.
  */
 @Composable
 fun MediaGrid(
     groups: List<MediaGroup>,
     onItemClick: (index: Int) -> Unit,
     windowWidthSizeClass: WindowWidthSizeClass = rememberWindowWidthSizeClass(),
+    selectedIds: Set<Long> = emptySet(),
+    onItemLongClick: (MediaItem) -> Unit = {},
 ) {
     val minThumbnailSize = gridMinThumbnailSize(windowWidthSizeClass)
     val spacing = gridSpacing(windowWidthSizeClass)
@@ -117,7 +129,13 @@ fun MediaGrid(
                 val startIndex = flatIndex
                 itemsIndexed(items = group.items, key = { _, item -> item.id }) { indexInGroup, item ->
                     val index = startIndex + indexInGroup
-                    MediaGridItem(item = item, onClick = { onItemClick(index) })
+                    MediaGridItem(
+                        item = item,
+                        isSelected = item.id in selectedIds,
+                        showSelectionUi = selectedIds.isNotEmpty(),
+                        onClick = { onItemClick(index) },
+                        onLongClick = { onItemLongClick(item) },
+                    )
                 }
                 flatIndex += group.items.size
             }
@@ -243,24 +261,49 @@ private fun MediaGroupHeader(label: String) {
 }
 
 @Composable
-private fun MediaGridItem(item: MediaItem, onClick: () -> Unit) {
+private fun MediaGridItem(
+    item: MediaItem,
+    isSelected: Boolean,
+    showSelectionUi: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(4.dp))
-            .clickable(onClick = onClick),
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         AsyncImage(
             model = item.uri,
             contentDescription = item.displayName,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (isSelected) Modifier.padding(8.dp).clip(RoundedCornerShape(4.dp)) else Modifier),
         )
 
-        if (item.mediaType == MediaType.VIDEO) {
+        if (item.mediaType == MediaType.VIDEO && !showSelectionUi) {
             VideoBadge(
                 durationMillis = item.durationMillis ?: 0L,
                 modifier = Modifier.align(Alignment.BottomEnd),
+            )
+        }
+
+        if (showSelectionUi) {
+            if (isSelected) {
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
+            }
+            Icon(
+                imageVector = if (isSelected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else Color.White,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) Color.White else Color.Black.copy(alpha = 0.35f)),
             )
         }
     }

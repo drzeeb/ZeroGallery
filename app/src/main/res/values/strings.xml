@@ -31,6 +31,24 @@
     <string name="video_gestures_help_volume">Swipe up/down on the right half to adjust volume</string>
     <string name="video_gestures_help_dismiss">Got it</string>
 
+    <string name="share_action">Share</string>
+    <string name="delete_action">Delete</string>
+    <string name="selection_clear_action">Clear selection</string>
+    <string name="delete_confirm_title">Delete?</string>
+    <string name="delete_confirm_dismiss">Cancel</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="delete_confirm_body">
+        <item quantity="one">This item will be permanently deleted.</item>
+        <item quantity="other">These %d items will be permanently deleted.</item>
+    </plurals>
+    <plurals name="delete_confirm_action">
+        <item quantity="one">Delete</item>
+        <item quantity="other">Delete %d</item>
+    </plurals>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

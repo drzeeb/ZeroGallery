@@ -31,6 +31,24 @@
     <string name="video_gestures_help_volume">Veeg omhoog/omlaag op de rechterhelft om het volume aan te passen</string>
     <string name="video_gestures_help_dismiss">Begrepen</string>
 
+    <string name="share_action">Delen</string>
+    <string name="delete_action">Verwijderen</string>
+    <string name="selection_clear_action">Selectie wissen</string>
+    <string name="delete_confirm_title">Verwijderen?</string>
+    <string name="delete_confirm_dismiss">Annuleren</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d geselecteerd</item>
+        <item quantity="other">%d geselecteerd</item>
+    </plurals>
+    <plurals name="delete_confirm_body">
+        <item quantity="one">Dit item wordt permanent verwijderd.</item>
+        <item quantity="other">Deze %d items worden permanent verwijderd.</item>
+    </plurals>
+    <plurals name="delete_confirm_action">
+        <item quantity="one">Verwijderen</item>
+        <item quantity="other">%d verwijderen</item>
+    </plurals>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

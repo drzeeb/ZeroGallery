@@ -31,6 +31,24 @@
     <string name="video_gestures_help_volume">Auf der rechten Hälfte nach oben/unten wischen, um die Lautstärke anzupassen</string>
     <string name="video_gestures_help_dismiss">Verstanden</string>
 
+    <string name="share_action">Teilen</string>
+    <string name="delete_action">Löschen</string>
+    <string name="selection_clear_action">Auswahl aufheben</string>
+    <string name="delete_confirm_title">Löschen?</string>
+    <string name="delete_confirm_dismiss">Abbrechen</string>
+    <plurals name="selection_count">
+        <item quantity="one">%d ausgewählt</item>
+        <item quantity="other">%d ausgewählt</item>
+    </plurals>
+    <plurals name="delete_confirm_body">
+        <item quantity="one">Dieses Element wird endgültig gelöscht.</item>
+        <item quantity="other">Diese %d Elemente werden endgültig gelöscht.</item>
+    </plurals>
+    <plurals name="delete_confirm_action">
+        <item quantity="one">Löschen</item>
+        <item quantity="other">%d löschen</item>
+    </plurals>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d Element</item>
         <item quantity="other">%d Elemente</item>

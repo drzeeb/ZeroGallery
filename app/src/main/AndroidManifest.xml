@@ -67,6 +67,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Lets MediaSharer share HiddenMediaScanner's file:// items (raw filesystem paths, never
+             indexed by MediaStore) without a FileUriExposedException - rewrites them to a
+             temporary, revocable content:// uri instead of exposing the raw path. Regular
+             MediaStore items are already content:// and never need this. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
