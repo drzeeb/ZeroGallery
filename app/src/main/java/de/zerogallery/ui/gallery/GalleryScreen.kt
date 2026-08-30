@@ -26,8 +26,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
 import de.zerogallery.ui.detail.MediaDetailScreen
 import de.zerogallery.ui.permission.MediaPermissions
@@ -41,15 +44,26 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
  * There's intentionally no navigation library here yet: with just these two destinations, a
  * single `selectedIndex` is simpler than a `NavHost`. Should more top-level screens appear later
  * (e.g. albums, settings), migrating to `androidx.navigation.compose` becomes worthwhile.
+ *
+ * Permission state is *remembered* across launches: rather than always starting out in
+ * [GalleryUiState.PermissionRequired] and forcing the user to tap "Grant access" again on every
+ * cold start, [MediaPermissions.hasAll] is checked directly against the system on `ON_START`
+ * (covers both the initial launch and the user returning to the app, e.g. after granting the
+ * permission from Settings) so an already-granted permission is picked up immediately.
  */
 @Composable
 fun GalleryRoute(viewModel: GalleryViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { result -> viewModel.onPermissionResult(result.values.all { it }) }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.onPermissionResult(MediaPermissions.hasAll(context))
+    }
 
     val index = selectedIndex
     val contentState = uiState
