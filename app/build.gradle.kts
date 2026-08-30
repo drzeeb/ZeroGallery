@@ -108,7 +108,7 @@ dependencies {
 // them, and works via Gradle's own `Test` task integration regardless of *how* those classes got
 // compiled.
 jacoco {
-    toolVersion = "0.8.13"
+    toolVersion = "0.8.15"
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
