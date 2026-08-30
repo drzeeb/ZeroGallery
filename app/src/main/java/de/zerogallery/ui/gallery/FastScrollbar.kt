@@ -2,7 +2,8 @@ package de.zerogallery.ui.gallery
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -54,6 +56,16 @@ private val HideDelay = 1_000.milliseconds
  * [gridState] happens to already be mid-scroll: otherwise there'd be no way to ever *start* a drag
  * from rest, since the thumb visually appearing was itself gated on a scroll already being in
  * progress - a chicken-and-egg that made the thumb effectively ungrabbable.
+ *
+ * Dragging is handled with a hand-rolled gesture loop (rather than the usual
+ * [androidx.compose.foundation.gestures.detectVerticalDragGestures]) that explicitly consumes
+ * every touch during [PointerEventPass.Initial] - the pass that runs *before* [MediaGrid]'s own
+ * [androidx.compose.foundation.gestures.scrollable] (used internally by `LazyVerticalGrid`) gets a
+ * chance to see it during its own `Main` pass. Being drawn on top only wins hit-testing for simple
+ * taps; for a competing *drag* gesture the grid's own scrolling would otherwise still consume the
+ * exact same touch sequence first, since sibling z-order alone doesn't decide which of two
+ * simultaneously-registered drag detectors "wins" - without this, dragging the thumb just scrolled
+ * the grid underneath it instead, with the thumb merely along for the ride.
  *
  * Position/dragging is necessarily approximate: [LazyGridState] never lays out (or even knows the
  * size of) items far outside the current viewport, so there's no real "total content height" to
@@ -99,22 +111,29 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
             .width(ThumbTouchWidth)
             .onSizeChanged { trackHeightPx = it.height.toFloat() }
             .pointerInput(gridState) {
-                detectVerticalDragGestures(
-                    onDragStart = { offset ->
-                        isDragging = true
-                        dragThumbTopPx = (offset.y - thumbHeightPx / 2).coerceIn(0f, travel)
-                        coroutineScope.launch {
-                            gridState.scrollToFraction(if (travel > 0f) dragThumbTopPx / travel else 0f)
-                        }
-                    },
-                    onDragEnd = { isDragging = false },
-                    onDragCancel = { isDragging = false },
-                ) { change, dragAmount ->
-                    change.consume()
-                    dragThumbTopPx = (dragThumbTopPx + dragAmount).coerceIn(0f, travel)
+                fun currentTravel() = (trackHeightPx - thumbHeightPx).coerceAtLeast(0f)
+                fun moveTo(y: Float) {
+                    val travelNow = currentTravel()
+                    dragThumbTopPx = (y - thumbHeightPx / 2).coerceIn(0f, travelNow)
                     coroutineScope.launch {
-                        gridState.scrollToFraction(if (travel > 0f) dragThumbTopPx / travel else 0f)
+                        gridState.scrollToFraction(if (travelNow > 0f) dragThumbTopPx / travelNow else 0f)
                     }
+                }
+
+                awaitEachGesture {
+                    val down = awaitFirstDown(pass = PointerEventPass.Initial)
+                    down.consume()
+                    isDragging = true
+                    moveTo(down.position.y)
+
+                    while (true) {
+                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        change.consume()
+                        if (!change.pressed) break
+                        moveTo(change.position.y)
+                    }
+                    isDragging = false
                 }
             },
     ) {
@@ -156,6 +175,8 @@ internal suspend fun LazyGridState.scrollToFraction(fraction: Float) {
         .coerceIn(0, totalItems - 1)
     scrollToItem(targetIndex)
 }
+
+
 
 
 
