@@ -1,8 +1,5 @@
 package de.zerogallery.ui.detail
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -36,13 +33,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import de.zerogallery.domain.model.MediaItem
 import de.zerogallery.domain.model.MediaType
-
-/** Walks up the [ContextWrapper] chain to find the enclosing [Activity], if any. */
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
+import de.zerogallery.ui.util.findActivity
 
 /**
  * Full-screen, swipeable detail viewer opened by tapping a tile in

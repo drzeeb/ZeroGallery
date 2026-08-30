@@ -23,6 +23,15 @@
     <string name="hidden_folders_permission_confirm">Astellungen opmaachen</string>
     <string name="hidden_folders_permission_dismiss">Ofbriechen</string>
 
+    <string name="overflow_menu_action">Méi Optiounen</string>
+    <string name="menu_item_video_gestures">Videosgesten</string>
+    <string name="video_gestures_help_title">Videosgesten</string>
+    <string name="video_gestures_help_intro">Wärend en Video mat ausgeblendte Kontrollen ofgespillt gëtt (eemol tippen fir se ze verstoppen):</string>
+    <string name="video_gestures_help_seek">Iwwerall no lénks/riets wëschen fir am Video virun- oder zréckzespullen</string>
+    <string name="video_gestures_help_brightness">Op der lénker Hallschent no uewen/ënnen wëschen fir d\'Helligkeet vum Bildschierm unzepassen</string>
+    <string name="video_gestures_help_volume">Op der rietser Hallschent no uewen/ënnen wëschen fir de Volume unzepassen</string>
+    <string name="video_gestures_help_dismiss">Verstan</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d Element</item>
         <item quantity="other">%d Elementer</item>

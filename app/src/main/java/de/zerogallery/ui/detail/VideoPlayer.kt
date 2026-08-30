@@ -1,11 +1,17 @@
 package de.zerogallery.ui.detail
 
+import android.content.Context
+import android.media.AudioManager
 import android.net.Uri
+import android.provider.Settings
+import android.view.Window
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +21,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -40,8 +49,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -49,11 +62,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import de.zerogallery.R
 import de.zerogallery.ui.gallery.formatDuration
+import de.zerogallery.ui.util.findActivity
 import androidx.media3.common.MediaItem as Media3MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -78,6 +94,49 @@ private enum class VideoResizeMode(val frameLayoutMode: Int, val labelRes: Int) 
 
 /** How long the current mode's label stays visible after tapping the aspect-ratio button. */
 private const val ResizeModeLabelVisibleMillis = 1_200L
+
+/** Never let the brightness gesture dim the screen all the way to invisible/unrecoverable black. */
+private const val MinBrightnessFraction = 0.02f
+
+/**
+ * Which of the three hidden-chrome drag gestures (see [VideoPlayer]'s class doc) a single-finger
+ * drag has been recognized as, once it moves past touch slop - `null` until then, at which point
+ * it's still just a tap candidate.
+ */
+private enum class VideoDragGesture { SEEK, BRIGHTNESS, VOLUME }
+
+/**
+ * This window's current effective screen brightness as a 0f-1f fraction, used as the brightness
+ * gesture's starting point so the first drag frame doesn't visibly jump to some unrelated value.
+ *
+ * [Window.getAttributes]' `screenBrightness` is `-1f` ([android.view.WindowManager.LayoutParams
+ * .BRIGHTNESS_OVERRIDE_NONE]) unless a previous gesture already overrode it for this window, in
+ * which case it falls back to the actual system brightness setting (a plain read, needing no
+ * permission beyond what every app already has).
+ */
+private fun currentBrightnessFraction(context: android.content.Context, window: Window?): Float {
+    val windowOverride = window?.attributes?.screenBrightness ?: -1f
+    if (windowOverride in 0f..1f) return windowOverride
+    return try {
+        Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS) / 255f
+    } catch (e: Settings.SettingNotFoundException) {
+        0.5f
+    }
+}
+
+/** This device's current music-stream volume as a 0f-1f fraction, same purpose as [currentBrightnessFraction]. */
+private fun currentVolumeFraction(audioManager: AudioManager?): Float {
+    val manager = audioManager ?: return 0.5f
+    val maxVolume = manager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
+    return manager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
+}
+
+/** Which speaker icon best represents a 0f-1f volume fraction, mirroring the system volume UI. */
+private fun volumeIcon(fraction: Float) = when {
+    fraction <= 0f -> Icons.AutoMirrored.Filled.VolumeOff
+    fraction < 0.5f -> Icons.AutoMirrored.Filled.VolumeDown
+    else -> Icons.AutoMirrored.Filled.VolumeUp
+}
 
 /**
  * Plays a single local video via Media3/ExoPlayer (Apache 2.0 - no licensing conflicts with this
@@ -117,6 +176,34 @@ private const val ResizeModeLabelVisibleMillis = 1_200L
  * thumb back to the *actual* (pre-seek) playback position on every tick; the real seek only
  * happens once the drag ends (`onValueChangeFinished`), not on every intermediate value while
  * dragging, to avoid flooding the player with seek requests.
+ *
+ * A horizontal drag *while [isChromeVisible] is false* scrubs the same way, live, instead of
+ * swiping to the next/previous item in the pager - dragging across the full screen width covers
+ * the entire video, same ratio as the [Slider]. A vertical drag in that same state instead adjusts,
+ * live, this window's screen brightness if it started in the left half of the screen
+ * ([VideoDragGesture.BRIGHTNESS], see [currentBrightnessFraction]) or the device's music-stream
+ * volume if it started in the right half ([VideoDragGesture.VOLUME], see [currentVolumeFraction],
+ * via [AudioManager.setStreamVolume] - needs no extra permission, same as pressing the hardware
+ * volume rocker) - either way, dragging the full screen height covers the entire 0-100% range.
+ * This has to fully replace the pager's own gesture handling rather than run alongside it: a
+ * custom `awaitEachGesture` loop consumes every move event for the whole gesture as soon as the
+ * chrome is hidden (even before a direction is known), so the pager never gets a chance to see any
+ * of it and start its own swipe-to-next-item drag - only once the accumulated movement exceeds
+ * touch slop does it decide which [VideoDragGesture] it actually is (horizontal-dominant vs.
+ * vertical, then which half it started in). The same loop also detects a plain tap (near-zero
+ * total movement) to toggle the chrome, replacing the plain `Modifier.clickable` an earlier
+ * version of this composable used for that alone. While [isChromeVisible] is true, nothing is
+ * consumed here at all, so the pager's normal swipe-to-next behaviour keeps working exactly as
+ * before.
+ *
+ * The brightness override only applies to this `Activity`'s window for as long as this particular
+ * [VideoPlayer] instance is composed - it's released back to the system/user default the moment
+ * the user swipes to a different item (this composable is recreated per [uri]), rather than
+ * permanently leaking a dimmed screen into browsing photos or other videos afterwards. The volume
+ * gesture deliberately does *not* get the same treatment: it's the actual system media volume
+ * (same as the hardware volume rocker), which a user expects to stay exactly as they left it
+ * regardless of what they browse to next, unlike a screen-dimming override that's specific to this
+ * one video.
  */
 @Composable
 fun VideoPlayer(
@@ -128,6 +215,7 @@ fun VideoPlayer(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val window = LocalView.current.context.findActivity()?.window
 
     val exoPlayer = remember(uri) {
         ExoPlayer.Builder(context).build().apply {
@@ -148,6 +236,13 @@ fun VideoPlayer(
         onDispose {
             exoPlayer.removeListener(listener)
             exoPlayer.release()
+            // Release this window's brightness override (if any) back to the system/user default
+            // - see class doc for why this shouldn't outlive this particular video.
+            window?.let { win ->
+                win.attributes = win.attributes.apply {
+                    screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                }
+            }
         }
     }
 
@@ -165,6 +260,19 @@ fun VideoPlayer(
     var isSeeking by remember(exoPlayer) { mutableStateOf(false) }
     var seekPositionMs by remember(exoPlayer) { mutableFloatStateOf(0f) }
 
+    var isAdjustingBrightness by remember(exoPlayer) { mutableStateOf(false) }
+    var brightnessFraction by remember(exoPlayer) {
+        mutableFloatStateOf(currentBrightnessFraction(context, window))
+    }
+
+    val audioManager = remember(context) {
+        context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    }
+    var isAdjustingVolume by remember(exoPlayer) { mutableStateOf(false) }
+    var volumeFraction by remember(exoPlayer) {
+        mutableFloatStateOf(currentVolumeFraction(audioManager))
+    }
+
     LaunchedEffect(exoPlayer, isChromeVisible) {
         while (isChromeVisible) {
             if (!isSeeking) {
@@ -180,6 +288,10 @@ fun VideoPlayer(
     var isResizeModeLabelVisible by remember(uri) { mutableStateOf(false) }
     val resizeMode = VideoResizeMode.entries[resizeModeIndex]
 
+    // Reflects whichever is currently authoritative: the live drag/slider value while seeking,
+    // the polled playback position otherwise.
+    val displayPositionMs = if (isSeeking) seekPositionMs.toLong() else positionMs
+
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -192,16 +304,196 @@ fun VideoPlayer(
             update = { playerView -> playerView.resizeMode = resizeMode.frameLayoutMode },
         )
 
-        // Tapping anywhere only toggles the chrome (see class doc) - it never touches playback.
+        // See class doc: handles both the tap-to-toggle-chrome gesture and, while the chrome is
+        // hidden, the drag-to-scrub/brightness/volume gestures that fully take over from the
+        // pager's default swipe-to-next-item behaviour.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onTap,
-                ),
+                .pointerInput(isChromeVisible, exoPlayer) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var totalDrag = Offset.Zero
+                        var lockedGesture: VideoDragGesture? = null
+                        var seekGestureStartPositionMs = 0L
+                        var seekGestureDurationMs = 1L
+                        var brightnessGestureStartFraction = 0f
+                        var volumeGestureStartFraction = 0f
+                        var lastAppliedVolumeIndex = -1
+                        val isLeftHalf = down.position.x < size.width / 2f
+
+                        do {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            val delta = change.positionChange()
+                            totalDrag += delta
+
+                            if (!isChromeVisible) {
+                                if (lockedGesture == null &&
+                                    (abs(totalDrag.x) > viewConfiguration.touchSlop ||
+                                        abs(totalDrag.y) > viewConfiguration.touchSlop)
+                                ) {
+                                    lockedGesture = when {
+                                        abs(totalDrag.x) > abs(totalDrag.y) -> VideoDragGesture.SEEK
+                                        isLeftHalf -> VideoDragGesture.BRIGHTNESS
+                                        else -> VideoDragGesture.VOLUME
+                                    }
+                                    when (lockedGesture) {
+                                        VideoDragGesture.SEEK -> {
+                                            isSeeking = true
+                                            seekGestureStartPositionMs =
+                                                exoPlayer.currentPosition.coerceAtLeast(0L)
+                                            seekGestureDurationMs =
+                                                exoPlayer.duration.coerceAtLeast(1L)
+                                        }
+
+                                        VideoDragGesture.BRIGHTNESS -> {
+                                            isAdjustingBrightness = true
+                                            brightnessGestureStartFraction = brightnessFraction
+                                        }
+
+                                        VideoDragGesture.VOLUME -> {
+                                            isAdjustingVolume = true
+                                            volumeGestureStartFraction = volumeFraction
+                                            lastAppliedVolumeIndex =
+                                                audioManager?.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                                    ?: -1
+                                        }
+                                    }
+                                }
+
+                                when (lockedGesture) {
+                                    VideoDragGesture.SEEK -> {
+                                        val deltaMs =
+                                            (totalDrag.x / size.width) * seekGestureDurationMs
+                                        seekPositionMs = (seekGestureStartPositionMs + deltaMs)
+                                            .coerceIn(0f, seekGestureDurationMs.toFloat())
+                                    }
+
+                                    VideoDragGesture.BRIGHTNESS -> {
+                                        val newFraction =
+                                            (brightnessGestureStartFraction - totalDrag.y / size.height)
+                                                .coerceIn(MinBrightnessFraction, 1f)
+                                        brightnessFraction = newFraction
+                                        window?.let { win ->
+                                            win.attributes = win.attributes.apply {
+                                                screenBrightness = newFraction
+                                            }
+                                        }
+                                    }
+
+                                    VideoDragGesture.VOLUME -> {
+                                        val newFraction =
+                                            (volumeGestureStartFraction - totalDrag.y / size.height)
+                                                .coerceIn(0f, 1f)
+                                        volumeFraction = newFraction
+                                        audioManager?.let { manager ->
+                                            val maxVolume = manager
+                                                .getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                                                .coerceAtLeast(1)
+                                            val newIndex = (newFraction * maxVolume).roundToInt()
+                                                .coerceIn(0, maxVolume)
+                                            if (newIndex != lastAppliedVolumeIndex) {
+                                                manager.setStreamVolume(
+                                                    AudioManager.STREAM_MUSIC,
+                                                    newIndex,
+                                                    0,
+                                                )
+                                                lastAppliedVolumeIndex = newIndex
+                                            }
+                                        }
+                                    }
+
+                                    null -> Unit
+                                }
+                                // Consume every move once the chrome is hidden, even before a
+                                // direction is known - see class doc for why.
+                                change.consume()
+                            }
+                        } while (event.changes.any { it.pressed })
+
+                        when (lockedGesture) {
+                            VideoDragGesture.SEEK -> {
+                                exoPlayer.seekTo(seekPositionMs.toLong())
+                                isSeeking = false
+                            }
+
+                            VideoDragGesture.BRIGHTNESS -> isAdjustingBrightness = false
+
+                            VideoDragGesture.VOLUME -> isAdjustingVolume = false
+
+                            null -> {
+                                if (totalDrag.getDistance() < viewConfiguration.touchSlop) onTap()
+                            }
+                        }
+                    }
+                },
         )
+
+        // Feedback for the drag-to-scrub gesture while the chrome (and with it, the regular seek
+        // bar) is hidden - without this there'd be no indication at all of where a scrub landed.
+        AnimatedVisibility(
+            visible = isSeeking && !isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            Text(
+                text = "${formatDuration(displayPositionMs)} / ${formatDuration(durationMs)}",
+                color = Color.White,
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+        }
+
+        // Feedback for the drag-to-adjust-brightness gesture, left-aligned to match the screen
+        // half it's triggered from.
+        AnimatedVisibility(
+            visible = isAdjustingBrightness && !isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.CenterStart),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(start = 24.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Icon(imageVector = Icons.Filled.BrightnessMedium, contentDescription = null, tint = Color.White)
+                Text(
+                    text = "${(brightnessFraction * 100).roundToInt()}%",
+                    color = Color.White,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+
+        // Feedback for the drag-to-adjust-volume gesture, right-aligned to match the screen half
+        // it's triggered from.
+        AnimatedVisibility(
+            visible = isAdjustingVolume && !isChromeVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(end = 24.dp)
+                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+            ) {
+                Icon(imageVector = volumeIcon(volumeFraction), contentDescription = null, tint = Color.White)
+                Text(
+                    text = "${(volumeFraction * 100).roundToInt()}%",
+                    color = Color.White,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
 
         AnimatedVisibility(
             visible = isChromeVisible,
@@ -271,10 +563,10 @@ fun VideoPlayer(
                     }
                 }
 
-                // Seek bar, bottom-aligned. displayPositionMs reflects the drag in progress (if
-                // any) rather than the polled playback position, so the thumb doesn't jump back
-                // to the pre-seek position while the user is still dragging it.
-                val displayPositionMs = if (isSeeking) seekPositionMs.toLong() else positionMs
+                // Seek bar, bottom-aligned. displayPositionMs (hoisted above, also driving the
+                // hidden-chrome scrub indicator) reflects the drag in progress (if any) rather
+                // than the polled playback position, so the thumb doesn't jump back to the
+                // pre-seek position while the user is still dragging it.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier

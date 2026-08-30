@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Overflow menu (⋮) in the gallery's top bar with a "Video gestures" entry explaining the three hidden-chrome video gestures below - they were otherwise completely undiscoverable, since hiding the overlay is itself just a single tap with no hint that the available gestures then change underneath it
+- Video playback: with the overlay chrome hidden, a vertical drag starting in the *right* half of the screen now adjusts the device's music-stream volume live (dragging the full screen height covers the entire range), with a floating icon+percentage indicator while dragging - last of three planned hidden-chrome gestures, completing the set alongside the timeline-scrub and brightness gestures
+- Video playback: with the overlay chrome hidden, a vertical drag starting in the *left* half of the screen now adjusts this window's screen brightness live (dragging the full screen height covers the entire range), with a floating icon+percentage indicator while dragging - second of three planned hidden-chrome gestures (volume swipe to follow); the brightness override is released back to the system/user default as soon as you swipe to a different item
+- Video playback: with the overlay chrome hidden, a horizontal drag now scrubs the video's timeline live (same full-width-equals-full-duration ratio as the regular seek bar) instead of swiping to the next/previous item, with a small floating position indicator while dragging - first of three planned hidden-chrome gestures (brightness and volume swipes to follow)
 - New app icon: a clean, flat photo-stack mark (two overlapping cards with a mountain/sun glyph punched through the front one) on a deep indigo backdrop, replacing the default Android Studio template icon (green debug grid + generic robot artwork). Fully vector-based (`ic_launcher_background`/`ic_launcher_foreground`), including a themed/monochrome variant for Android 13+
 
 ### Fixed

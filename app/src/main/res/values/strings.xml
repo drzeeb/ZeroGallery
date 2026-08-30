@@ -22,6 +22,15 @@
     <string name="hidden_folders_permission_confirm">Open settings</string>
     <string name="hidden_folders_permission_dismiss">Cancel</string>
 
+    <string name="overflow_menu_action">More options</string>
+    <string name="menu_item_video_gestures">Video gestures</string>
+    <string name="video_gestures_help_title">Video gestures</string>
+    <string name="video_gestures_help_intro">While playing a video with its controls hidden (tap once to hide them):</string>
+    <string name="video_gestures_help_seek">Swipe left/right anywhere to scrub through the video</string>
+    <string name="video_gestures_help_brightness">Swipe up/down on the left half to adjust screen brightness</string>
+    <string name="video_gestures_help_volume">Swipe up/down on the right half to adjust volume</string>
+    <string name="video_gestures_help_dismiss">Got it</string>
+
     <plurals name="media_folder_item_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>
