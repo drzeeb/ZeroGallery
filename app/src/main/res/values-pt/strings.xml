@@ -10,7 +10,6 @@
 
     <string name="video_resize_mode_action">Alterar proporção do vídeo</string>
     <string name="video_resize_mode_fit">Ajustar</string>
-    <string name="video_resize_mode_crop">Preencher (cortar)</string>
     <string name="video_resize_mode_stretch">Esticar</string>
 </resources>
 

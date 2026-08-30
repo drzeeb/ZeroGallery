@@ -10,6 +10,6 @@
 
     <string name="video_resize_mode_action">Säitenverhältnis vum Video änneren</string>
     <string name="video_resize_mode_fit">Upassen</string>
-    <string name="video_resize_mode_crop">Fëllen (zouschneiden)</string>
+
     <string name="video_resize_mode_stretch">Strecken</string>
 </resources>

@@ -10,6 +10,5 @@
 
     <string name="video_resize_mode_action">Cambia proporzioni del video</string>
     <string name="video_resize_mode_fit">Adatta</string>
-    <string name="video_resize_mode_crop">Riempi (ritaglia)</string>
     <string name="video_resize_mode_stretch">Estendi</string>
 </resources>
