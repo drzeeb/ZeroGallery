@@ -49,14 +49,13 @@ import kotlinx.coroutines.launch
  * button in [VideoPlayer], mirroring the aspect-ratio cycling found in players like VLC:
  * - [FIT]: the whole video stays visible, letterboxed with black bars if its aspect ratio doesn't
  *   match the screen - the default, no cropping or distortion.
- * - [CROP]: the video fills the entire screen with no black bars, preserving its aspect ratio by
- *   cropping whatever doesn't fit (zoom-to-fill).
- * - [STRETCH]: the video is enlarged to fill the entire screen edge-to-edge, exactly like [CROP] -
- *   *not* [AspectRatioFrameLayout.RESIZE_MODE_FILL], which stretches width/height independently
- *   and visibly distorts the picture (circles become ovals, people look squashed/elongated). A
- *   video's aspect ratio always has to be preserved one way or another, so "filling the whole
- *   screen" and "distorting the image" are mutually exclusive - the former is achieved here by
- *   uniformly scaling up and letting whatever doesn't fit run off-screen, same as [CROP].
+ * - [CROP]/[STRETCH]: the video fills the entire screen edge-to-edge with no black bars,
+ *   preserving its original aspect ratio by cropping whatever doesn't fit (zoom-to-fill). VLC
+ *   itself never distorts the picture when "filling" the screen either - it always preserves the
+ *   video's proportions and crops the overflow instead, never scaling width/height independently.
+ *   Both entries map to the same [AspectRatioFrameLayout.RESIZE_MODE_ZOOM]; kept as two separate,
+ *   named cycle steps (rather than merged into one) since that's still a deliberate, distinct
+ *   choice for the user to land on when cycling through modes.
  *
  * [AspectRatioFrameLayout]'s `RESIZE_MODE_*` constants are `@UnstableApi` in Media3, opted into
  * project-wide via `app/lint.xml` since they're just plain, stable resize-mode integers under the
