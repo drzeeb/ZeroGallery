@@ -61,11 +61,12 @@ private val HideDelay = 1_000.milliseconds
  * [androidx.compose.foundation.gestures.detectVerticalDragGestures]) that explicitly consumes
  * every touch during [PointerEventPass.Initial] - the pass that runs *before* [MediaGrid]'s own
  * [androidx.compose.foundation.gestures.scrollable] (used internally by `LazyVerticalGrid`) gets a
- * chance to see it during its own `Main` pass. Being drawn on top only wins hit-testing for simple
- * taps; for a competing *drag* gesture the grid's own scrolling would otherwise still consume the
- * exact same touch sequence first, since sibling z-order alone doesn't decide which of two
- * simultaneously-registered drag detectors "wins" - without this, dragging the thumb just scrolled
- * the grid underneath it instead, with the thumb merely along for the ride.
+ * chance to see it during its own `Main` pass. On top of that, [onDraggingChange] lets the caller
+ * flip `LazyVerticalGrid`'s own `userScrollEnabled` off for as long as the thumb is actively being
+ * dragged - a belt-and-suspenders guarantee that the grid can never also react to the same touch
+ * sequence as a normal scroll/fling regardless of any pointer-input pass/priority subtlety, since
+ * being drawn visually on top of the grid alone doesn't decide which of two simultaneously-
+ * registered drag detectors wins a competing *drag* gesture (unlike a plain tap).
  *
  * Position/dragging is necessarily approximate: [LazyGridState] never lays out (or even knows the
  * size of) items far outside the current viewport, so there's no real "total content height" to
@@ -75,7 +76,11 @@ private val HideDelay = 1_000.milliseconds
  * precise scrollbar.
  */
 @Composable
-internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifier) {
+internal fun FastScrollbar(
+    gridState: LazyGridState,
+    modifier: Modifier = Modifier,
+    onDraggingChange: (Boolean) -> Unit = {},
+) {
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var trackHeightPx by remember { mutableFloatStateOf(0f) }
@@ -124,6 +129,7 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
                     val down = awaitFirstDown(pass = PointerEventPass.Initial)
                     down.consume()
                     isDragging = true
+                    onDraggingChange(true)
                     moveTo(down.position.y)
 
                     while (true) {
@@ -134,6 +140,7 @@ internal fun FastScrollbar(gridState: LazyGridState, modifier: Modifier = Modifi
                         moveTo(change.position.y)
                     }
                     isDragging = false
+                    onDraggingChange(false)
                 }
             },
     ) {
@@ -175,6 +182,7 @@ internal suspend fun LazyGridState.scrollToFraction(fraction: Float) {
         .coerceIn(0, totalItems - 1)
     scrollToItem(targetIndex)
 }
+
 
 
 

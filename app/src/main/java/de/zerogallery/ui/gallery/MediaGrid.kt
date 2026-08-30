@@ -25,6 +25,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -91,12 +95,14 @@ fun MediaGrid(
     val minThumbnailSize = gridMinThumbnailSize(windowWidthSizeClass)
     val spacing = gridSpacing(windowWidthSizeClass)
     val gridState = rememberLazyGridState()
+    var isDraggingThumb by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Adaptive(minSize = minThumbnailSize),
             modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = !isDraggingThumb,
             contentPadding = PaddingValues(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
             horizontalArrangement = Arrangement.spacedBy(spacing),
@@ -119,6 +125,7 @@ fun MediaGrid(
 
         FastScrollbar(
             gridState = gridState,
+            onDraggingChange = { isDraggingThumb = it },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight(),
@@ -147,12 +154,14 @@ fun FolderGrid(
     val minThumbnailSize = gridMinThumbnailSize(windowWidthSizeClass)
     val spacing = gridSpacing(windowWidthSizeClass)
     val gridState = rememberLazyGridState()
+    var isDraggingThumb by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Adaptive(minSize = minThumbnailSize),
             modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = !isDraggingThumb,
             contentPadding = PaddingValues(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
             horizontalArrangement = Arrangement.spacedBy(spacing),
@@ -164,6 +173,7 @@ fun FolderGrid(
 
         FastScrollbar(
             gridState = gridState,
+            onDraggingChange = { isDraggingThumb = it },
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight(),
