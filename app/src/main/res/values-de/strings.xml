@@ -11,4 +11,19 @@
     <string name="video_resize_mode_action">Video-Seitenverhältnis ändern</string>
     <string name="video_resize_mode_fit">Einpassen</string>
     <string name="video_resize_mode_stretch">Strecken</string>
+
+    <string name="media_grouping_action">Gruppierung ändern</string>
+    <string name="media_grouping_unknown_folder">Andere</string>
+
+    <string name="hidden_folders_show_action">Versteckte Ordner anzeigen</string>
+    <string name="hidden_folders_hide_action">Versteckte Ordner ausblenden</string>
+    <string name="hidden_folders_permission_title">Versteckte Ordner anzeigen?</string>
+    <string name="hidden_folders_permission_body">Versteckte Ordner (ihr Name beginnt mit einem Punkt, z. B. von einer Tresor- oder Messaging-App) werden vom Medienindex von Android nie gescannt. Deshalb benötigt ZeroGallery die Berechtigung „Zugriff auf alle Dateien“, um sie direkt zu lesen. Du wirst zu einem Systemeinstellungsbildschirm weitergeleitet, um sie zu erteilen.</string>
+    <string name="hidden_folders_permission_confirm">Einstellungen öffnen</string>
+    <string name="hidden_folders_permission_dismiss">Abbrechen</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d Element</item>
+        <item quantity="other">%d Elemente</item>
+    </plurals>
 </resources>

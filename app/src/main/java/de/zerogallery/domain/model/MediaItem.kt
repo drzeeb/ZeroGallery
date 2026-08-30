@@ -17,5 +17,10 @@ data class MediaItem(
     val sizeBytes: Long,
     /** Duration in milliseconds. Always `null` for [MediaType.IMAGE]. */
     val durationMillis: Long? = null,
+    /**
+     * The display name of the folder this item lives in (`MediaStore`'s
+     * `BUCKET_DISPLAY_NAME`, e.g. "Camera", "Screenshots", "WhatsApp Images"). Blank if unknown.
+     */
+    val bucketName: String = "",
 )
 

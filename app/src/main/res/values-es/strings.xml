@@ -12,4 +12,19 @@
     <string name="video_resize_mode_fit">Ajustar</string>
 
     <string name="video_resize_mode_stretch">Estirar</string>
+
+    <string name="media_grouping_action">Cambiar agrupación</string>
+    <string name="media_grouping_unknown_folder">Otros</string>
+
+    <string name="hidden_folders_show_action">Mostrar carpetas ocultas</string>
+    <string name="hidden_folders_hide_action">Ocultar carpetas ocultas</string>
+    <string name="hidden_folders_permission_title">¿Mostrar carpetas ocultas?</string>
+    <string name="hidden_folders_permission_body">Las carpetas ocultas (su nombre empieza por un punto, por ejemplo, las de una app de bóveda o mensajería) nunca son escaneadas por el índice multimedia de Android, así que ZeroGallery necesita el permiso de «Acceso a todos los archivos» para leerlas directamente. Se te llevará a una pantalla de ajustes del sistema para concederlo.</string>
+    <string name="hidden_folders_permission_confirm">Abrir ajustes</string>
+    <string name="hidden_folders_permission_dismiss">Cancelar</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d elemento</item>
+        <item quantity="other">%d elementos</item>
+    </plurals>
 </resources>

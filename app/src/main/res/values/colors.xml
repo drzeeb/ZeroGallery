@@ -2,4 +2,9 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- App icon: deep indigo backdrop, kept as its own color so the foreground's
+         mountain/sun cutout (ic_launcher_foreground.xml) can reference the exact same
+         value and read as a hole punched through the white photo card. -->
+    <color name="ic_launcher_background">#1B1330</color>
 </resources>

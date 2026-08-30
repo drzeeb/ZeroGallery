@@ -11,12 +11,31 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Special permission (API 30+), requested only when the user opts into the folder view's
+         "show hidden folders" toggle. MediaStore's own media scanner never indexes dot-prefixed
+         directories (the convention several vault/messaging apps use to hide their media from
+         gallery apps) at all, so no ContentResolver query can ever surface that content - reading
+         it back requires raw filesystem access, which in turn requires this permission on modern,
+         scoped-storage Android. See HiddenMediaScanner/AllFilesAccessPermission. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
     <!-- Media3/ExoPlayer's manifest requests this to detect connection type for adaptive
          streaming, which ZeroGallery never does (local playback only). Stripped to keep the
          "no network capability whatsoever" guarantee airtight. -->
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE"
         tools:node="remove" />
+
+    <!-- Android 11+ package visibility: lets AllFilesAccessPermission#requestIntent check whether
+         the per-app "All files access" settings screen resolves before falling back to the
+         general one. -->
+    <queries>
+        <intent>
+            <action android:name="android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION" />
+        </intent>
+    </queries>
 
     <application
         android:name=".ZeroGalleryApplication"

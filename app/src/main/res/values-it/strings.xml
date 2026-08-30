@@ -11,4 +11,19 @@
     <string name="video_resize_mode_action">Cambia proporzioni del video</string>
     <string name="video_resize_mode_fit">Adatta</string>
     <string name="video_resize_mode_stretch">Estendi</string>
+
+    <string name="media_grouping_action">Cambia raggruppamento</string>
+    <string name="media_grouping_unknown_folder">Altro</string>
+
+    <string name="hidden_folders_show_action">Mostra cartelle nascoste</string>
+    <string name="hidden_folders_hide_action">Nascondi cartelle nascoste</string>
+    <string name="hidden_folders_permission_title">Mostrare le cartelle nascoste?</string>
+    <string name="hidden_folders_permission_body">Le cartelle nascoste (il cui nome inizia con un punto, ad es. usate da un\'app di cassaforte o messaggistica) non vengono mai analizzate dall\'indice multimediale di Android, quindi ZeroGallery ha bisogno del permesso \"Accesso a tutti i file\" per leggerle direttamente. Verrai indirizzato a una schermata delle impostazioni di sistema per concederlo.</string>
+    <string name="hidden_folders_permission_confirm">Apri impostazioni</string>
+    <string name="hidden_folders_permission_dismiss">Annulla</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d elemento</item>
+        <item quantity="other">%d elementi</item>
+    </plurals>
 </resources>

@@ -11,5 +11,20 @@
     <string name="video_resize_mode_action">Change video aspect ratio</string>
     <string name="video_resize_mode_fit">Fit</string>
     <string name="video_resize_mode_stretch">Stretch</string>
+
+    <string name="media_grouping_action">Change grouping</string>
+    <string name="media_grouping_unknown_folder">Other</string>
+
+    <string name="hidden_folders_show_action">Show hidden folders</string>
+    <string name="hidden_folders_hide_action">Hide hidden folders</string>
+    <string name="hidden_folders_permission_title">Show hidden folders?</string>
+    <string name="hidden_folders_permission_body">Hidden folders (their name starts with a dot, e.g. by a vault or messaging app) are never scanned by Android\'s media index, so ZeroGallery needs the \"All files access\" permission to read them directly. You\'ll be taken to a system settings screen to grant it.</string>
+    <string name="hidden_folders_permission_confirm">Open settings</string>
+    <string name="hidden_folders_permission_dismiss">Cancel</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
 </resources>
 
