@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-30
+
 ### Added
 - A new "Publish" GitHub Actions workflow (`.github/workflows/publish.yml`, `workflow_dispatch`) checks out an already-tagged release and (re-)publishes it to one or more independent, opt-in targets: `bundle` (re-)attaches the `.aab`/`.apk` to that tag's GitHub Release, `fastlane` uploads the signed bundle - plus this repo's own store listing text, `fastlane/metadata/android/<locale>/`, now written out for all 7 non-`lb` app locales: title, short/full description, initial changelog - to a Play Console track via [fastlane](https://fastlane.tools) (see `fastlane/Fastfile`, needs a `PLAY_STORE_JSON_KEY_BASE64` service-account secret, see README). Deliberately kept separate from `release.yml` (which now only ever bumps the version, builds and tags) so a single failing publish target can be freely retried on its own, without needing to cut an entirely new version just to redo it
 - Renovate (`renovate.json`) now keeps Gradle/version-catalog dependencies and GitHub Actions up to date automatically, grouped into sensible PRs (AndroidX together, Kotlin+its Gradle plugin together, etc.) on a weekly schedule - requires installing the [Renovate GitHub App](https://github.com/apps/renovate) on this repo once, the config alone doesn't activate it
@@ -26,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Video playback: with the overlay chrome hidden, a vertical drag starting in the *left* half of the screen now adjusts this window's screen brightness live (dragging the full screen height covers the entire range), with a floating icon+percentage indicator while dragging - second of three planned hidden-chrome gestures (volume swipe to follow); the brightness override is released back to the system/user default as soon as you swipe to a different item
 - Video playback: with the overlay chrome hidden, a horizontal drag now scrubs the video's timeline live (same full-width-equals-full-duration ratio as the regular seek bar) instead of swiping to the next/previous item, with a small floating position indicator while dragging - first of three planned hidden-chrome gestures (brightness and volume swipes to follow)
 - New app icon: a clean, flat photo-stack mark (two overlapping cards with a mountain/sun glyph punched through the front one) on a deep indigo backdrop, replacing the default Android Studio template icon (green debug grid + generic robot artwork). Fully vector-based (`ic_launcher_background`/`ic_launcher_foreground`), including a themed/monochrome variant for Android 13+
+
+### Changed
+- Dependencies kept current via Renovate (see above) ahead of the 1.0.0 release: Gradle 9.7.1, Kotlin 2.4.10, AndroidX Lifecycle (runtime-ktx/viewmodel-compose) 2.11.0, Material Components 1.14.0, Coil 3.6.0, Media3/ExoPlayer 1.11.0, Kotlinx Coroutines 1.11.0, Mockito 5.23.0, JaCoco 0.8.15, and the CI/release/publish workflows' own GitHub Actions (`actions/checkout` v7, `actions/setup-java` v6, `gradle/actions/setup-gradle` v6, `codecov/codecov-action` v7, `actions/upload-artifact` v7, `softprops/action-gh-release` v3, `ruby/setup-ruby`'s pinned Ruby 4.0.6)
 
 ### Fixed
 - Hidden folder access could crash every gallery refresh once its Storage Access Framework permission grant stopped actually working (revoked by the user in system settings, or the picked folder itself deleted) - `HiddenMediaScanner` now catches that `SecurityException` and resets back to "no folder picked" instead, rather than propagating the exception up. Also excluded the folder's persisted uri from Auto Backup/device transfer entirely (`backup_rules.xml`/`data_extraction_rules.xml`), since neither ever restores the actual grant it refers to - only ever a stale, guaranteed-broken uri string
@@ -70,4 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Migrated the default project template from Fragments/Navigation/ViewBinding to a single-activity Jetpack Compose + Material 3 UI
+
+[Unreleased]: https://github.com/drzeeb/ZeroGallery/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/drzeeb/ZeroGallery/releases/tag/v1.0.0
 

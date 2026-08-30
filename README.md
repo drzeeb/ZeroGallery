@@ -35,7 +35,7 @@ ZeroGallery **deliberately does not** declare `android.permission.INTERNET`. Thi
 
 ## 📦 Installation
 
-The project is currently under active development. Releases will be published on the **Google Play Store** in due course.
+ZeroGallery 1.0.0 is being prepared for release on the **Google Play Store**.
 
 ```bash
 git clone https://github.com/drzeeb/ZeroGallery.git
@@ -50,6 +50,11 @@ cd ZeroGallery
 - [x] Basic grid (phone)
 - [x] Adaptive layout (tablet support)
 - [x] Detail viewer & video player
+- [x] Grouping by date/folder, fast scroll
+- [x] Delete & share photos/videos
+- [x] Hidden (dot-prefixed) folder support via the Storage Access Framework
+- [x] Signed release builds, automated release/publish pipeline
+- [ ] Play Store submission (1.0.0)
 
 See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes.
 
