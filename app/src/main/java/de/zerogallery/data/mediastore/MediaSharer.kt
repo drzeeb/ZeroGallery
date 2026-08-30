@@ -33,7 +33,6 @@ object MediaSharer {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 
-
     /** An image or video MIME type if every item shares it, or a wildcard for a mixed batch. */
     internal fun commonMimeType(items: List<MediaItem>): String = when {
         items.all { it.mediaType == MediaType.IMAGE } -> "image/*"

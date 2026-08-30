@@ -31,7 +31,6 @@ private const val KEY_TREE_URI = "tree_uri"
  */
 object HiddenFolderAccess {
 
-
     fun isConfigured(context: Context): Boolean = treeUri(context) != null
 
     fun treeUri(context: Context): Uri? =
@@ -49,6 +48,19 @@ object HiddenFolderAccess {
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
         prefs(context).edit { putString(KEY_TREE_URI, treeUri.toString()) }
+    }
+
+    /**
+     * Clears the persisted folder pick, e.g. after [HiddenMediaScanner] discovers its permission
+     * grant no longer actually works (revoked by the user in system settings, or the folder itself
+     * deleted) - the next refresh then behaves as if no folder was ever picked (see
+     * [HiddenMediaScanner.scan]) instead of silently failing forever. Auto Backup/device transfer
+     * never restore the actual grant this uri string refers to (see `backup_rules.xml`/
+     * `data_extraction_rules.xml`, which explicitly exclude these prefs for the same reason), so a
+     * fresh install/new device is never in this broken state to begin with.
+     */
+    fun clear(context: Context) {
+        prefs(context).edit { remove(KEY_TREE_URI) }
     }
 
     private fun prefs(context: Context) =

@@ -29,6 +29,12 @@ import de.zerogallery.domain.model.MediaType
  * to be picked individually. [DocumentFile] traversal is also considerably slower than raw
  * [java.io.File] access (each listing is its own cross-process content query), which is an
  * accepted trade-off for not needing a device-wide permission for it.
+ *
+ * The persisted grant [HiddenFolderAccess] hands back can still stop actually working later - the
+ * user can revoke it from system settings, or the folder itself can get deleted - in which case
+ * every [DocumentFile] call below throws [SecurityException]. [scan] treats that exactly like
+ * never having picked a folder at all (see [HiddenFolderAccess.clear]) rather than crashing every
+ * refresh of the whole gallery from then on.
  */
 object HiddenMediaScanner {
 
@@ -39,9 +45,14 @@ object HiddenMediaScanner {
 
     fun scan(context: Context): List<MediaItem> {
         val treeUri = HiddenFolderAccess.treeUri(context) ?: return emptyList()
-        val root = DocumentFile.fromTreeUri(context, treeUri) ?: return emptyList()
-        val bucketName = root.name ?: return emptyList()
-        return scanFolder(root, bucketName)
+        return try {
+            val root = DocumentFile.fromTreeUri(context, treeUri) ?: return emptyList()
+            val bucketName = root.name ?: return emptyList()
+            scanFolder(root, bucketName)
+        } catch (_: SecurityException) {
+            HiddenFolderAccess.clear(context)
+            emptyList()
+        }
     }
 
     private fun scanFolder(folder: DocumentFile, bucketName: String): List<MediaItem> {

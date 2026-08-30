@@ -6,8 +6,11 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- The user-picked hidden folder's uri (see HiddenFolderAccess) refers to a persisted
+         Storage Access Framework grant that Auto Backup never actually restores - only this uri
+         string would come back, pointing at a folder the app has no real permission to read
+         anymore. Excluded so a restore never resurrects that broken, silently-failing state;
+         HiddenMediaScanner also defends against it directly for anyone upgrading from a backup
+         made before this exclusion existed. -->
+    <exclude domain="sharedpref" path="hidden_folder_access.xml" />
 </full-backup-content>
