@@ -33,7 +33,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,6 +79,15 @@ import de.zerogallery.ui.util.rememberWindowWidthSizeClass
  * through the detail viewer always matches whatever the grid was just showing when a tile was
  * tapped (the flat list for [MediaGroupingMode.NONE]/[MediaGroupingMode.DATE], or just the opened
  * folder's items for [MediaGroupingMode.FOLDER] - never *all* items regardless of the folder).
+ *
+ * Opening [MediaDetailScreen] replaces [GalleryScreen] entirely in the composition (there's no
+ * navigation backstack keeping both around), which would normally reset the grid's scroll
+ * position back to the top the moment it's recomposed after closing the viewer. [saveableStateHolder]
+ * is hoisted all the way up here - above that swap - specifically so it doesn't get thrown away
+ * along with it; [GalleryScreen] wraps the actual grid in [SaveableStateHolder.SaveableStateProvider]
+ * keyed by the current grouping mode/folder, so scrolling down, opening an item and closing it
+ * again lands right back where you were, and switching between grouping modes or folders each
+ * keeps its own remembered scroll position rather than sharing one.
  */
 @Composable
 fun GalleryRoute(viewModel: GalleryViewModel) {
@@ -86,6 +97,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
     var selectedFolderLabel by rememberSaveable { mutableStateOf<String?>(null) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
     var showAllFilesAccessRationale by rememberSaveable { mutableStateOf(false) }
+    val saveableStateHolder = rememberSaveableStateHolder()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -171,6 +183,7 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
             groupingMode = groupingMode,
             selectedFolderLabel = selectedFolderLabel,
             showHidden = showHidden,
+            saveableStateHolder = saveableStateHolder,
             onGroupingModeChange = {
                 groupingMode = it
                 selectedFolderLabel = null
@@ -205,6 +218,8 @@ fun GalleryRoute(viewModel: GalleryViewModel) {
  * grid below give immediate, self-explanatory feedback for the change - no separate confirmation
  * toast needed. While a folder is open, the grouping button is replaced by a back arrow (see
  * [selectedFolderLabel]) and the app bar's title becomes that folder's name.
+ *
+ * See [GalleryRoute] for why [saveableStateHolder] is hoisted rather than just created here.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -214,6 +229,7 @@ private fun GalleryScreen(
     groupingMode: MediaGroupingMode,
     selectedFolderLabel: String?,
     showHidden: Boolean,
+    saveableStateHolder: SaveableStateHolder,
     onGroupingModeChange: (MediaGroupingMode) -> Unit,
     onShowHiddenChange: (Boolean) -> Unit,
     onFolderOpen: (String) -> Unit,
@@ -291,24 +307,37 @@ private fun GalleryScreen(
                 is GalleryUiState.Loading -> CircularProgressIndicator()
                 is GalleryUiState.PermissionRequired -> PermissionRationale(onRequestPermission)
                 is GalleryUiState.Empty -> EmptyGalleryMessage()
-                is GalleryUiState.Content -> if (isFolderPicker) {
-                    FolderGrid(
-                        folders = groups,
-                        onFolderClick = { onFolderOpen(it.label) },
-                        windowWidthSizeClass = windowWidthSizeClass,
-                    )
-                } else {
-                    val displayedGroups = if (openedFolder) {
-                        listOfNotNull(groups.firstOrNull { it.label == selectedFolderLabel })
-                            .map { it.copy(label = "") }
-                    } else {
-                        groups
+                is GalleryUiState.Content -> {
+                    // Keyed so NONE/DATE, the folder picker and each individual folder all keep
+                    // their own remembered scroll position independently of one another, rather
+                    // than one shared position that would otherwise look wrong when switching
+                    // between views with very different content lengths.
+                    val gridStateKey = when {
+                        isFolderPicker -> "grouping:folder-picker"
+                        openedFolder -> "grouping:folder:$selectedFolderLabel"
+                        else -> "grouping:$groupingMode"
                     }
-                    MediaGrid(
-                        groups = displayedGroups,
-                        onItemClick = onItemClick,
-                        windowWidthSizeClass = windowWidthSizeClass,
-                    )
+                    saveableStateHolder.SaveableStateProvider(gridStateKey) {
+                        if (isFolderPicker) {
+                            FolderGrid(
+                                folders = groups,
+                                onFolderClick = { onFolderOpen(it.label) },
+                                windowWidthSizeClass = windowWidthSizeClass,
+                            )
+                        } else {
+                            val displayedGroups = if (openedFolder) {
+                                listOfNotNull(groups.firstOrNull { it.label == selectedFolderLabel })
+                                    .map { it.copy(label = "") }
+                            } else {
+                                groups
+                            }
+                            MediaGrid(
+                                groups = displayedGroups,
+                                onItemClick = onItemClick,
+                                windowWidthSizeClass = windowWidthSizeClass,
+                            )
+                        }
+                    }
                 }
             }
         }
