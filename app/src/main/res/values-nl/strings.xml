@@ -14,5 +14,10 @@
 
     <string name="media_grouping_action">Groepering wijzigen</string>
     <string name="media_grouping_unknown_folder">Overig</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
 </resources>
 

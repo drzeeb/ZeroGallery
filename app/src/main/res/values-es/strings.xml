@@ -15,4 +15,9 @@
 
     <string name="media_grouping_action">Cambiar agrupación</string>
     <string name="media_grouping_unknown_folder">Otros</string>
+
+    <plurals name="media_folder_item_count">
+        <item quantity="one">%d elemento</item>
+        <item quantity="other">%d elementos</item>
+    </plurals>
 </resources>
