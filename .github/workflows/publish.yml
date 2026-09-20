@@ -71,7 +71,7 @@ jobs:
       - name: Set up Ruby (for fastlane)
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '4.0.6'
+          ruby-version: '4.0.7'
           bundler-cache: true
 
       - name: Decode Play Console service account key
