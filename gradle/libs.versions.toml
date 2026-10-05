@@ -13,7 +13,7 @@ lifecycleViewmodelCompose = "2.11.0"
 kotlinxCoroutines = "1.11.0"
 coil = "3.6.0"
 media3 = "1.11.0"
-mockito = "5.23.0"
+mockito = "5.24.0"
 documentfile = "1.1.0"
 
 [libraries]
